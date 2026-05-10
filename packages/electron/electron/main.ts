@@ -46,7 +46,7 @@ function createWindow(): void {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    const port = (process.env.BACKEND_PORT as string) || '3456';
+    const port = (process.env.BACKEND_PORT as string) || '3000';
     mainWindow.loadURL(`http://localhost:${port}`);
   }
 }
@@ -60,7 +60,7 @@ async function onReady(): Promise<void> {
   const backendDistDir = resolvePath('backend-dist');
   const frontendDistDir = resolvePath('frontend-dist');
   const chromeDataDir = getChromeDataDir();
-  const port = 3456;
+  const port = 3000;
 
   console.log(`[Main] Starting backend: ${backendDistDir}`);
   console.log(`[Main] Chrome data dir: ${chromeDataDir}`);

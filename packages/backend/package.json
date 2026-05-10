@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Quick testing scripts for browser automation",
   "scripts": {
-    "dev": "tsx src/api-server.ts",
+    "dev": "tsx watch src/api-server.ts",
     "build": "tsc",
     "test:chatgpt": "tsx src/test-chatgpt.ts",
     "test:chatgpt:upload": "tsx src/test-chatgpt-upload.ts",

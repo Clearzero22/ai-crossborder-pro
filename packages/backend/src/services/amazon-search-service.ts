@@ -19,34 +19,70 @@ export class AmazonSearchService {
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
 
-  async search(keyword: string, maxResults = 20): Promise<SearchResult> {
-    // ⚠️ 重要：统一使用共享的浏览器数据目录
-    const userDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
+  async search(keyword: string, maxResults = 20, headless = true): Promise<SearchResult> {
+    const userDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'amazon-search-profile');
+
+    // 模拟真实 Chrome 的 UA（去掉 HeadlessChrome 前缀）
+    const fakeUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36';
 
     this.browser = await chromium.launchPersistentContext(userDataDir, {
-      headless: true,
+      headless,
+      channel: 'chrome',
       viewport: { width: 1280, height: 900 },
       locale: 'en-US',
+      userAgent: fakeUA,
+      ignoreDefaultArgs: ['--enable-automation'],
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+      ],
     });
     this.context = this.browser;
 
+    // 隐藏自动化特征
+    await this.context.addInitScript(`
+      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+      delete window.__playwright;
+      delete window.__pw_manual;
+      delete window.__pw_inspect;
+      window.chrome = { runtime: {} };
+    `);
+
     const page = this.context.pages()[0] || await this.context.newPage();
 
-    // 搜索
     await page.goto('https://www.amazon.com/', {
       timeout: 30000,
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
-    const searchBox = page.locator('#twotabsearchtextbox, #nav-bb-search, input[type="text"][placeholder*="Search"]').first();
-    await searchBox.waitFor({ state: 'visible', timeout: 10000 });
+    // 如果 Amazon 显示 "Continue shopping" 验证页面，自动点击
+    const continueBtn = page.locator('button:has-text("Continue shopping")').first();
+    if (await continueBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      console.log('[Amazon] Detected "Continue shopping" verification, clicking...');
+      await continueBtn.click();
+      await page.waitForTimeout(3000);
+    }
+
+    console.log(`[Amazon] Page title: ${await page.title()}`);
+    console.log(`[Amazon] Page URL: ${page.url()}`);
+
+    const bodyText = await page.locator('body').innerText().then(t => t.substring(0, 300)).catch(() => '');
+    if (bodyText.toLowerCase().includes('captcha') || bodyText.toLowerCase().includes('robot') || bodyText.toLowerCase().includes('verify')) {
+      const screenshotPath = path.join(os.tmpdir(), 'amazon-blocked.png');
+      await page.screenshot({ path: screenshotPath });
+      throw new Error(`Amazon 检测到自动化访问，已拦截。截图: ${screenshotPath}`);
+    }
+
+    const searchBox = page.locator('#twotabsearchtextbox').first();
+    await searchBox.waitFor({ state: 'visible', timeout: 15000 });
     await searchBox.fill(keyword);
     await page.waitForTimeout(500);
     await searchBox.press('Enter');
-    await page.waitForTimeout(5000);
+    await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+    await page.waitForTimeout(2000);
 
-    // 提取 ASIN
     const results = await page.evaluate((max) => {
       const asins: string[] = [];
       const links: string[] = [];
@@ -63,7 +99,6 @@ export class AmazonSearchService {
         links.push(`https://www.amazon.com/dp/${asin}`);
       }
 
-      // fallback: 从链接中提取 ASIN
       if (asins.length === 0) {
         const anchors = document.querySelectorAll('a[href*="/dp/"]');
         for (const a of anchors) {

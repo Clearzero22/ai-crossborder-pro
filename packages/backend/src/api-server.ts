@@ -37,7 +37,7 @@ import { ChatGPTFileService } from './services/chatgpt-file-service';
 
 // ─── 配置 ────────────────────────────────────────────────────
 
-const PORT = Number(process.env.PORT) || 3456;
+const PORT = Number(process.env.PORT) || 3000;
 
 // ─── 依赖 ────────────────────────────────────────────────────
 
@@ -366,7 +366,7 @@ app.post('/api/ai/compare', async (c) => {
 // ─── POST /api/search/amazon ─────────────────────────────────
 
 app.post('/api/search/amazon', async (c) => {
-  let body: { keyword?: string; maxResults?: number };
+  let body: { keyword?: string; maxResults?: number; headless?: boolean };
   try {
     body = await c.req.json();
   } catch {
@@ -378,10 +378,11 @@ app.post('/api/search/amazon', async (c) => {
   }
 
   const maxResults = Math.min(Number(body.maxResults) || 20, 48);
+  const headless = body.headless !== false;
   const service = new AmazonSearchService();
 
   try {
-    const result = await service.search(body.keyword, maxResults);
+    const result = await service.search(body.keyword, maxResults, headless);
     return c.json({ success: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -1114,7 +1115,7 @@ app.onError((err, c) => {
 // ─── 启动 ────────────────────────────────────────────────────
 
 serve(
-  { fetch: app.fetch, port: PORT },
+  { fetch: app.fetch, port: PORT, hostname: '127.0.0.1' },
   (info) => {
     console.log(`\n  🚀 API 服务器已启动`);
     console.log(`  📍 http://localhost:${info.port}`);
