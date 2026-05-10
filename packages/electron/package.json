@@ -1,0 +1,25 @@
+{
+  "name": "@ai-crossborder/electron",
+  "version": "1.0.0",
+  "description": "AI CrossBorder Pro — Electron Desktop Shell",
+  "main": "dist-electron/main.js",
+  "author": "Clearzero2",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n fe,be,el \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:electron\"",
+    "dev:frontend": "npx vite --port 5173 --strictPort --root ../frontend",
+    "dev:backend": "cd ../backend && npx tsx src/api-server.ts",
+    "build:electron": "npx tsc -p tsconfig.json",
+    "dev:electron": "npm run build:electron && electron .",
+    "build": "npm run build:electron && node scripts/build.mjs"
+  },
+  "dependencies": {
+    "electron-is-dev": "^2.0.0",
+    "@ai-crossborder/backend": "*",
+    "@ai-crossborder/frontend": "*"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

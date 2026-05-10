@@ -1,0 +1,10 @@
+node_modules/
+dist-electron/
+frontend-dist/
+backend-dist/
+backend_node_modules/
+release/
+*.dmg
+*.exe
+.DS_Store
+backend_dist_node_modules/

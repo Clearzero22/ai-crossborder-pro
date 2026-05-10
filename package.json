@@ -1,0 +1,30 @@
+{
+  "name": "ai-crossborder-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Cross-Border E-Commerce Automation Workflow — Monorepo",
+  "workspaces": [
+    "packages/frontend",
+    "packages/backend",
+    "packages/electron"
+  ],
+  "scripts": {
+    "dev": "concurrently -n fe,be,el \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:electron\"",
+    "dev:frontend": "npm run dev -w packages/frontend",
+    "dev:backend": "npm run dev -w packages/backend",
+    "dev:electron": "npm run dev -w packages/electron",
+    "build": "npm run build -w packages/frontend && npm run build -w packages/backend && npm run build:electron",
+    "build:electron": "npm run build -w packages/electron",
+    "build:mac": "npm run build && npx electron-builder --mac --config packages/electron/electron-builder.yml",
+    "build:win": "npm run build && npx electron-builder --win --x64 --config packages/electron/electron-builder.yml",
+    "build:linux": "npm run build && npx electron-builder --linux --config packages/electron/electron-builder.yml",
+    "postinstall": "npx electron-builder install-app-deps",
+    "clean": "rm -rf packages/frontend/dist packages/backend/dist packages/electron/dist-electron packages/electron/frontend-dist packages/electron/backend-dist packages/electron/backend_dist_node_modules packages/electron/release"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
+    "typescript": "^5.5.0"
+  }
+}

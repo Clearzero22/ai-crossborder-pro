@@ -1,0 +1,57 @@
+appId: com.crossborder.pro
+productName: AI CrossBorder Pro
+copyright: Copyright 2026 Clearzero2
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - dist-electron/**/*
+  - frontend-dist/**/*
+  - backend-dist/**/*
+  - package.json
+
+asar: true
+asarUnpack:
+  - backend-dist/node_modules/playwright/**
+  - backend-dist/node_modules/playwright-core/**
+
+mac:
+  target:
+    - dmg
+  icon: resources/icon.icns
+  category: public.app-category.developer-tools
+  hardenedRuntime: false
+
+dmg:
+  title: AI CrossBorder Pro
+  artifactName: AI-CrossBorder-Pro-${version}-mac-${arch}.${ext}
+
+win:
+  target:
+    - nsis
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: AI-CrossBorder-Pro-${version}-win-${arch}-setup.${ext}
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: resources/icon.png
+  category: Development
+  artifactName: AI-CrossBorder-Pro-${version}-linux-${arch}.${ext}
+
+extraResources:
+  - from: backend-dist
+    to: backend-dist
+  - from: frontend-dist
+    to: frontend-dist
+  - from: backend_dist_node_modules
+    to: backend_node_modules

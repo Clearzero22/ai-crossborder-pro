@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-electron/
+frontend-dist/
+backend-dist/
+backend_dist_node_modules/
+release/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.blockmap
+.DS_Store
+*.txt
+.env
+*.log
