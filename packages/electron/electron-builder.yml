@@ -5,6 +5,7 @@ copyright: Copyright 2026 Clearzero2
 directories:
   output: release
   buildResources: resources
+  app: .
 
 files:
   - dist-electron/**/*
