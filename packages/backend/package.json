@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Quick testing scripts for browser automation",
   "scripts": {
+    "dev": "tsx src/api-server.ts",
     "build": "tsc",
     "test:chatgpt": "tsx src/test-chatgpt.ts",
     "test:chatgpt:upload": "tsx src/test-chatgpt-upload.ts",
@@ -30,8 +31,7 @@
     "test:parallel": "tsx src/test-all-parallel.ts",
     "generate": "tsx src/generate.ts",
     "api": "tsx src/api-server.ts",
-    "api:dev": "tsx watch src/api-server.ts",
-    "dev": "tsx"
+    "api:dev": "tsx watch src/api-server.ts"
   },
   "devDependencies": {
     "@types/pg": "^8.20.0",

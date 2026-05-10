@@ -7,9 +7,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n fe,be,el \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:electron\"",
-    "dev:frontend": "npx vite --port 5173 --strictPort --root ../frontend",
-    "dev:backend": "cd ../backend && npx tsx src/api-server.ts",
+    "dev": "npm run dev:electron",
     "build:electron": "npx tsc -p tsconfig.json",
     "dev:electron": "npm run build:electron && electron .",
     "build": "npm run build:electron && node scripts/build.mjs"
