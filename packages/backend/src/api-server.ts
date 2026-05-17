@@ -366,7 +366,7 @@ app.post('/api/ai/compare', async (c) => {
 // ─── POST /api/search/amazon ─────────────────────────────────
 
 app.post('/api/search/amazon', async (c) => {
-  let body: { keyword?: string; maxResults?: number };
+  let body: { keyword?: string; maxResults?: number; headless?: boolean };
   try {
     body = await c.req.json();
   } catch {
@@ -378,10 +378,11 @@ app.post('/api/search/amazon', async (c) => {
   }
 
   const maxResults = Math.min(Number(body.maxResults) || 20, 48);
+  const headless = body.headless !== false;
   const service = new AmazonSearchService();
 
   try {
-    const result = await service.search(body.keyword, maxResults);
+    const result = await service.search(body.keyword, maxResults, { headless });
     return c.json({ success: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -639,20 +640,26 @@ app.post('/api/keywords/xiyouzhaoci', async (c) => {
 
 app.post('/api/gemini/upload', async (c) => {
   try {
-    const { filePath, prompt, headless = true, responseTimeout = 60000 } = await c.req.json();
-
-    if (!filePath || typeof filePath !== 'string') {
-      return c.json(
-        { success: false, error: 'filePath is required and must be a string' },
-        400,
-      );
-    }
+    let { filePath, prompt, headless = true, responseTimeout = 60000 } = await c.req.json();
 
     if (!prompt || typeof prompt !== 'string') {
       return c.json(
         { success: false, error: 'prompt is required and must be a string' },
         400,
       );
+    }
+
+    // Fallback to default test image when filePath is missing or doesn't exist
+    if (!filePath || !fs.existsSync(String(filePath))) {
+      const defaultImage = path.resolve(__dirname, '../../../testimages/615DOoCI6xL._SX466_.jpg');
+      if (fs.existsSync(defaultImage)) {
+        filePath = defaultImage;
+      } else {
+        return c.json(
+          { success: false, error: `filePath not found: ${filePath}` },
+          400,
+        );
+      }
     }
 
     console.log(`[API] Gemini file upload request: ${filePath}`);

@@ -871,6 +871,9 @@ export const amazonSearchPlugin: NodePlugin = {
       useFirstLine: {
         type: 'boolean', label: '使用 AI 结果第一行作为关键词', default: true,
       },
+      headless: {
+        type: 'boolean', label: '无头模式', default: false,
+      },
     },
 
     async execute(ctx) {
@@ -896,7 +899,7 @@ export const amazonSearchPlugin: NodePlugin = {
       const resp = await fetch('/api/search/amazon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyword, maxResults }),
+        body: JSON.stringify({ keyword, maxResults, headless: ctx.config.headless }),
         signal: ctx.abortSignal,
       });
 
