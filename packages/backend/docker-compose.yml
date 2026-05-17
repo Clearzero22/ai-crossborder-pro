@@ -4,7 +4,7 @@ services:
     container_name: crawler-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5434:5432"
     environment:
       POSTGRES_DB: crawler_db
       POSTGRES_USER: crawler

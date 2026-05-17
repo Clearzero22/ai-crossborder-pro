@@ -388,7 +388,8 @@ export class DatabaseService {
          FROM workflow_executions WHERE started_at > NOW() - INTERVAL '30 days' GROUP BY DATE(started_at) ORDER BY date DESC`
       : `SELECT DATE(started_at) as date, COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as success, SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
          FROM workflow_executions WHERE started_at > ? GROUP BY DATE(started_at) ORDER BY date DESC`;
-    const trend = (await this.driver.query(trendSql, [thirtyDaysAgo])).rows;
+    const trendParams = this.driverName === 'postgres' ? [] : [thirtyDaysAgo];
+    const trend = (await this.driver.query(trendSql, trendParams)).rows;
 
     return {
       totalExecutions: totalExecs,
