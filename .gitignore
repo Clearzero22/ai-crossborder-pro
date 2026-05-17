@@ -5,6 +5,7 @@ frontend-dist/
 backend-dist/
 backend_dist_node_modules/
 release/
+release2/
 *.dmg
 *.exe
 *.AppImage
