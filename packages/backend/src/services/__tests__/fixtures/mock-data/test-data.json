@@ -1,0 +1,51 @@
+{
+  "testKeywords": [
+    "wireless mouse",
+    "蓝牙耳机",
+    "laptop",
+    "iPhone case",
+    "keyboard",
+    "monitor",
+    "usb hub",
+    "webcam",
+    "microphone",
+    "speaker"
+  ],
+  "testASINs": {
+    "valid": [
+      "B08F5M1K9M",
+      "B004YAVF8I",
+      "B087Z5WDJ2"
+    ],
+    "invalid": [
+      "INVALID",
+      "1234567890",
+      ""
+    ]
+  },
+  "testURLs": {
+    "amazon": [
+      "https://www.amazon.com/dp/B08F5M1K9M",
+      "https://www.amazon.com/dp/B004YAVF8I"
+    ],
+    "gigab2b": [
+      "https://www.gigab2b.com/index.php?route=product/product&product_id=747431"
+    ]
+  },
+  "aiTemplates": [
+    "extract-search-keywords",
+    "product-analysis",
+    "extract-title",
+    "extract-price",
+    "extract-specs",
+    "extract-features",
+    "listing-copy",
+    "ocr",
+    "general"
+  ],
+  "xiyouzhaociConfig": {
+    "defaultAsin": "B08F5M1K9M",
+    "maxKeywords": 50
+  },
+  "searchLimits": [5, 10, 20, 50]
+}

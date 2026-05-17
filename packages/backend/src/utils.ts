@@ -84,6 +84,7 @@ export async function launchStealth(userDataDir?: string): Promise<BrowserContex
       '--no-first-run',
       '--no-default-browser-check',
       '--disable-translate',
+      '--disable-blink-features=AutomationControlled'
     ],
     viewport: null,
     ignoreDefaultArgs: [
