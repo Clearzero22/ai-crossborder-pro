@@ -19,32 +19,72 @@ export class AmazonSearchService {
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
 
-  async search(keyword: string, maxResults = 20): Promise<SearchResult> {
+  async search(keyword: string, maxResults = 20, options: { headless?: boolean } = {}): Promise<SearchResult> {
     // ⚠️ 重要：统一使用共享的浏览器数据目录
-    const userDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
+    const userDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'automation');
 
-    this.browser = await chromium.launchPersistentContext(userDataDir, {
-      headless: true,
-      viewport: { width: 1280, height: 900 },
-      locale: 'en-US',
-    });
-    this.context = this.browser;
+    if (!this.browser) {
+      console.log(`[Playwright] Launching browser (headless: ${options.headless !== false ? 'true' : 'false'})...`);
+      this.browser = await chromium.launchPersistentContext(userDataDir, {
+        headless: options.headless !== false,
+        viewport: { width: 1280, height: 900 },
+        locale: 'en-US',
+        args: [
+          '--disable-blink-features=AutomationControlled',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-web-security',
+          '--disable-features=IsolateOrigins,site-per-process',
+        ],
+      });
+      this.context = this.browser;
+    }
 
     const page = this.context.pages()[0] || await this.context.newPage();
 
-    // 搜索
-    await page.goto('https://www.amazon.com/', {
-      timeout: 30000,
-      waitUntil: 'domcontentloaded',
+    // 添加反检测脚本
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+      Object.defineProperty(navigator, 'plugins', {
+        get: () => [1, 2, 3, 4, 5],
+      });
+      Object.defineProperty(navigator, 'languages', {
+        get: () => ['en-US', 'en'],
+      });
+      window.chrome = {
+        runtime: {},
+      };
+      Object.defineProperty(navigator, 'permissions', {
+        get: () => ({
+          query: () => Promise.resolve({ state: 'granted' }),
+        }),
+      });
     });
-    await page.waitForTimeout(2000);
 
-    const searchBox = page.locator('#twotabsearchtextbox, #nav-bb-search, input[type="text"][placeholder*="Search"]').first();
-    await searchBox.waitFor({ state: 'visible', timeout: 10000 });
-    await searchBox.fill(keyword);
-    await page.waitForTimeout(500);
-    await searchBox.press('Enter');
-    await page.waitForTimeout(5000);
+    // 直接使用搜索结果页面 URL
+    const searchUrl = `https://www.amazon.com/s?k=${encodeURIComponent(keyword)}`;
+    console.log(`[Playwright] Navigating to search results: ${searchUrl}`);
+    await page.goto(searchUrl, {
+      timeout: 60000,
+      waitUntil: 'networkidle',
+    });
+
+    // 检查是否遇到验证页面
+    await page.waitForTimeout(3000);
+    const currentUrl = page.url();
+    console.log(`[Playwright] Current URL: ${currentUrl}`);
+
+    if (currentUrl.includes('apb') || currentUrl.includes('error') || currentUrl.includes('verify') || currentUrl.includes('sorry')) {
+      console.log('[Playwright] Anti-bot page detected, waiting for manual action...');
+      console.log('[Playwright] Please complete the verification in the browser window');
+      await page.waitForTimeout(60000); // 等待60秒让用户手动验证
+    }
+
+    await page.waitForTimeout(3000);
 
     // 提取 ASIN
     const results = await page.evaluate((max) => {
