@@ -1020,6 +1020,7 @@ app.get('/api/workflow/stats', async (c) => {
 // ─── 静态文件服务（Electron 生产模式） ─────────────────────────
 
 const FRONTEND_DIR = process.env.FRONTEND_DIR;
+console.log(`[Static] FRONTEND_DIR=${FRONTEND_DIR}, exists=${FRONTEND_DIR ? fs.existsSync(FRONTEND_DIR) : 'N/A'}`);
 
 if (FRONTEND_DIR && fs.existsSync(FRONTEND_DIR)) {
   const mimeTypes: Record<string, string> = {

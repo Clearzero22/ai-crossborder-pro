@@ -221,7 +221,7 @@ export class AiVisionService {
       }),
     );
 
-    content.push({ type: 'text', text: prompt });
+    content.push({ type: 'text' as const, text: prompt } as any);
 
     const completion = await this.client.chat.completions.create({
       model: effectiveModel,

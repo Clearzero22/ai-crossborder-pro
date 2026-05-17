@@ -125,7 +125,7 @@ export class ChatGPTFileService {
     if (!fs.existsSync(filePath)) {
       return {
         success: false, prompt, response: '', fileUploaded: false, filePath: null,
-        timestamp: new Date().toISOString(), error: `文件不存在: ${filePath}`,
+        timestamp: new Date().toISOString(), error: `文件不存在: ${filePath}`, savedPath: null,
       };
     }
 
@@ -201,7 +201,7 @@ export class ChatGPTFileService {
         return {
           success: false, prompt, response: '', fileUploaded,
           filePath: fileUploaded ? filePath : null,
-          timestamp: new Date().toISOString(), error: '文本框加载超时',
+          timestamp: new Date().toISOString(), error: '文本框加载超时', savedPath: null,
         };
       }
 
@@ -242,7 +242,7 @@ export class ChatGPTFileService {
           success: false, prompt, response: '', fileUploaded,
           filePath: fileUploaded ? filePath : null,
           timestamp: new Date().toISOString(),
-          error: `等待回复超时: ${(error as Error).message}`,
+          error: `等待回复超时: ${(error as Error).message}`, savedPath: null,
         };
       }
 

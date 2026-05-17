@@ -36,6 +36,13 @@ export { GeminiProvider, GEMINI_MODELS } from './providers/gemini.provider';
 export { ProviderRegistry, globalRegistry } from './registry';
 export { AiRouter, aiRouter } from './ai-router';
 
+// 本文件内使用
+import { QwenProvider } from './providers/qwen.provider';
+import { OpenAiProvider } from './providers/openai.provider';
+import { ClaudeProvider } from './providers/claude.provider';
+import { GeminiProvider } from './providers/gemini.provider';
+import { globalRegistry } from './registry';
+
 /**
  * 初始化所有配置了 API Key 的 Providers
  *

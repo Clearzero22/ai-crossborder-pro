@@ -15,9 +15,9 @@
     "dev:electron": "npm run dev -w packages/electron",
     "build": "npm run build -w packages/frontend && npm run build -w packages/backend && npm run build:electron",
     "build:electron": "npm run build -w packages/electron",
-    "build:mac": "npm run build && npx electron-builder --mac --config packages/electron/electron-builder.yml",
-    "build:win": "npm run build && npx electron-builder --win --x64 --config packages/electron/electron-builder.yml",
-    "build:linux": "npm run build && npx electron-builder --linux --config packages/electron/electron-builder.yml",
+    "build:mac": "npm run build && npx electron-builder --mac --project packages/electron",
+    "build:win": "npm run build && npx electron-builder --win --x64 --project packages/electron",
+    "build:linux": "npm run build && npx electron-builder --linux --project packages/electron",
     "postinstall": "npx electron-builder install-app-deps",
     "clean": "rm -rf packages/frontend/dist packages/backend/dist packages/electron/dist-electron packages/electron/frontend-dist packages/electron/backend-dist packages/electron/backend_dist_node_modules packages/electron/release"
   },

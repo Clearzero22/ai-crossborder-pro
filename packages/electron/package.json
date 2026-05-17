@@ -18,6 +18,7 @@
     "@ai-crossborder/frontend": "*"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "electron": "42.0.1"
   }
 }

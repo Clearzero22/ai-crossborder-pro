@@ -4,7 +4,7 @@
  * 输入关键词，返回竞品 ASIN 列表。
  */
 
-import { chromium, type Browser, type BrowserContext } from 'playwright';
+import { chromium, type BrowserContext } from 'playwright';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -16,16 +16,15 @@ interface SearchResult {
 }
 
 export class AmazonSearchService {
-  private browser: Browser | null = null;
   private context: BrowserContext | null = null;
 
   async search(keyword: string, maxResults = 20, options: { headless?: boolean } = {}): Promise<SearchResult> {
     // ⚠️ 重要：统一使用共享的浏览器数据目录
     const userDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'automation');
 
-    if (!this.browser) {
+    if (!this.context) {
       console.log(`[Playwright] Launching browser (headless: ${options.headless !== false ? 'true' : 'false'})...`);
-      this.browser = await chromium.launchPersistentContext(userDataDir, {
+      this.context = await chromium.launchPersistentContext(userDataDir, {
         headless: options.headless !== false,
         viewport: { width: 1280, height: 900 },
         locale: 'en-US',
@@ -39,7 +38,6 @@ export class AmazonSearchService {
           '--disable-features=IsolateOrigins,site-per-process',
         ],
       });
-      this.context = this.browser;
     }
 
     const page = this.context.pages()[0] || await this.context.newPage();
@@ -55,7 +53,7 @@ export class AmazonSearchService {
       Object.defineProperty(navigator, 'languages', {
         get: () => ['en-US', 'en'],
       });
-      window.chrome = {
+      (window as any).chrome = {
         runtime: {},
       };
       Object.defineProperty(navigator, 'permissions', {
@@ -131,7 +129,6 @@ export class AmazonSearchService {
 
   async close(): Promise<void> {
     if (this.context) await this.context.close();
-    this.browser = null;
     this.context = null;
   }
 }
