@@ -847,18 +847,20 @@ ${keywordSection}
 
 // POST /api/workflow/executions — Create execution record
 app.post('/api/workflow/executions', async (c) => {
-  const db = new DatabaseService();
+  const db = createDb();
+  if (!db) return c.json({ success: false, error: 'Database unavailable' }, 503);
   try {
     await db.connect();
     const { execution_id, template_id, workflow_name, trigger } = await c.req.json();
     if (!execution_id || !workflow_name) {
       return c.json({ success: false, error: 'execution_id and workflow_name required' }, 400);
     }
-    await db.pool.query(
-      `INSERT INTO workflow_executions (execution_id, template_id, workflow_name, trigger)
-       VALUES ($1, $2, $3, $4)`,
-      [execution_id, template_id || null, workflow_name, trigger || 'manual']
-    );
+    await db.insertWorkflowExecution({
+      executionId: execution_id,
+      templateId: template_id || null,
+      workflowName: workflow_name,
+      trigger: trigger || 'manual',
+    });
     return c.json({ success: true, execution_id });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -869,22 +871,15 @@ app.post('/api/workflow/executions', async (c) => {
 
 // GET /api/workflow/executions — List executions
 app.get('/api/workflow/executions', async (c) => {
-  const db = new DatabaseService();
+  const db = createDb();
+  if (!db) return c.json({ success: false, error: 'Database unavailable' }, 503);
   try {
     await db.connect();
     const status = c.req.query('status');
     const limit = parseInt(c.req.query('limit') || '20');
     const offset = parseInt(c.req.query('offset') || '0');
-    const { rows } = status
-      ? await db.pool.query(
-          `SELECT * FROM workflow_executions WHERE status = $1 ORDER BY started_at DESC LIMIT $2 OFFSET $3`,
-          [status, limit, offset]
-        )
-      : await db.pool.query(
-          `SELECT * FROM workflow_executions ORDER BY started_at DESC LIMIT $1 OFFSET $2`,
-          [limit, offset]
-        );
-    return c.json({ success: true, executions: rows });
+    const executions = await db.listWorkflowExecutions({ status: status || undefined, limit, offset });
+    return c.json({ success: true, executions });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
   } finally {
@@ -894,21 +889,14 @@ app.get('/api/workflow/executions', async (c) => {
 
 // GET /api/workflow/executions/:id — Single execution with steps and logs
 app.get('/api/workflow/executions/:id', async (c) => {
-  const db = new DatabaseService();
+  const db = createDb();
+  if (!db) return c.json({ success: false, error: 'Database unavailable' }, 503);
   try {
     await db.connect();
     const executionId = c.req.param('id');
-    const { rows: [exec] } = await db.pool.query(
-      `SELECT * FROM workflow_executions WHERE execution_id = $1`, [executionId]
-    );
-    if (!exec) return c.json({ success: false, error: 'Not found' }, 404);
-    const { rows: steps } = await db.pool.query(
-      `SELECT * FROM workflow_step_records WHERE execution_id = $1 ORDER BY step_index`, [executionId]
-    );
-    const { rows: logs } = await db.pool.query(
-      `SELECT * FROM workflow_execution_logs WHERE execution_id = $1 ORDER BY created_at`, [executionId]
-    );
-    return c.json({ success: true, execution: exec, steps, logs });
+    const { execution, steps, logs } = await db.getWorkflowExecution(executionId);
+    if (!execution) return c.json({ success: false, error: 'Not found' }, 404);
+    return c.json({ success: true, execution, steps, logs });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
   } finally {
@@ -918,24 +906,17 @@ app.get('/api/workflow/executions/:id', async (c) => {
 
 // PUT /api/workflow/executions/:id/complete — Mark execution complete
 app.put('/api/workflow/executions/:id/complete', async (c) => {
-  const db = new DatabaseService();
+  const db = createDb();
+  if (!db) return c.json({ success: false, error: 'Database unavailable' }, 503);
   try {
     await db.connect();
     const executionId = c.req.param('id');
     const { status = 'completed', duration_ms } = await c.req.json();
-    const { rows: [{ count: total }] } = await db.pool.query(
-      `SELECT COUNT(*) as count FROM workflow_step_records WHERE execution_id = $1`, [executionId]
-    );
-    const { rows: [{ count: success }] } = await db.pool.query(
-      `SELECT COUNT(*) as count FROM workflow_step_records WHERE execution_id = $1 AND status = 'success'`, [executionId]
-    );
-    const { rows: [{ count: errors }] } = await db.pool.query(
-      `SELECT COUNT(*) as count FROM workflow_step_records WHERE execution_id = $1 AND status = 'error'`, [executionId]
-    );
-    await db.pool.query(
-      `UPDATE workflow_executions SET status = $1, duration_ms = $2, total_steps = $3, success_steps = $4, error_steps = $5, completed_at = NOW() WHERE execution_id = $6`,
-      [status, duration_ms || null, Number(total), Number(success), Number(errors), executionId]
-    );
+    await db.completeWorkflowExecution({
+      executionId,
+      status,
+      durationMs: duration_ms || null,
+    });
     return c.json({ success: true });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -946,20 +927,28 @@ app.put('/api/workflow/executions/:id/complete', async (c) => {
 
 // POST /api/workflow/steps — Write step data
 app.post('/api/workflow/steps', async (c) => {
-  const db = new DatabaseService();
+  const db = createDb();
+  if (!db) return c.json({ success: false, error: 'Database unavailable' }, 503);
   try {
     await db.connect();
     const { execution_id, step_index, node_id, node_label, node_type, status, input_data, output_data, config_data, duration_ms, error, logs } = await c.req.json();
     if (!execution_id || !node_id) {
       return c.json({ success: false, error: 'execution_id and node_id required' }, 400);
     }
-    await db.pool.query(
-      `INSERT INTO workflow_step_records (execution_id, step_index, node_id, node_label, node_type, status, input_data, output_data, config_data, duration_ms, error, logs, completed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10, $11, $12::jsonb, NOW())`,
-      [execution_id, step_index ?? 0, node_id, node_label || node_id, node_type || 'step', status || 'success',
-       JSON.stringify(input_data || {}), JSON.stringify(output_data || {}), JSON.stringify(config_data || {}),
-       duration_ms || null, error || null, JSON.stringify(logs || [])]
-    );
+    await db.insertWorkflowStep({
+      executionId: execution_id,
+      stepIndex: step_index ?? 0,
+      nodeId: node_id,
+      nodeLabel: node_label || node_id,
+      nodeType: node_type || 'step',
+      status: status || 'success',
+      inputData: input_data || {},
+      outputData: output_data || {},
+      configData: config_data || {},
+      durationMs: duration_ms || null,
+      error: error || null,
+      logs: logs || [],
+    });
     return c.json({ success: true });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
@@ -970,20 +959,14 @@ app.post('/api/workflow/steps', async (c) => {
 
 // GET /api/workflow/steps/:node_id/history — Node execution history
 app.get('/api/workflow/steps/:node_id/history', async (c) => {
-  const db = new DatabaseService();
+  const db = createDb();
+  if (!db) return c.json({ success: false, error: 'Database unavailable' }, 503);
   try {
     await db.connect();
     const nodeId = c.req.param('node_id');
     const limit = parseInt(c.req.query('limit') || '20');
-    const { rows } = await db.pool.query(
-      `SELECT ws.*, we.workflow_name, we.started_at as exec_started_at
-       FROM workflow_step_records ws
-       JOIN workflow_executions we ON ws.execution_id = we.execution_id
-       WHERE ws.node_id = $1
-       ORDER BY ws.id DESC LIMIT $2`,
-      [nodeId, limit]
-    );
-    return c.json({ success: true, history: rows });
+    const history = await db.getStepHistory(nodeId, limit);
+    return c.json({ success: true, history });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
   } finally {
@@ -993,21 +976,16 @@ app.get('/api/workflow/steps/:node_id/history', async (c) => {
 
 // POST /api/workflow/logs — Write logs (batch)
 app.post('/api/workflow/logs', async (c) => {
-  const db = new DatabaseService();
+  const db = createDb();
+  if (!db) return c.json({ success: false, error: 'Database unavailable' }, 503);
   try {
     await db.connect();
     const { execution_id, logs } = await c.req.json();
     if (!execution_id || !Array.isArray(logs)) {
       return c.json({ success: false, error: 'execution_id and logs[] required' }, 400);
     }
-    for (const log of logs) {
-      await db.pool.query(
-        `INSERT INTO workflow_execution_logs (execution_id, node_id, node_label, level, message)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [execution_id, log.node_id || null, log.node_label || null, log.level || 'info', log.message || '']
-      );
-    }
-    return c.json({ success: true, count: logs.length });
+    const count = await db.insertWorkflowLogs(execution_id, logs);
+    return c.json({ success: true, count });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
   } finally {
@@ -1017,32 +995,12 @@ app.post('/api/workflow/logs', async (c) => {
 
 // GET /api/workflow/stats — Dashboard statistics
 app.get('/api/workflow/stats', async (c) => {
-  const db = new DatabaseService();
+  const db = createDb();
+  if (!db) return c.json({ success: false, error: 'Database unavailable' }, 503);
   try {
     await db.connect();
-    const { rows: [{ count: totalExecs }] } = await db.pool.query(`SELECT COUNT(*) as count FROM workflow_executions`);
-    const { rows: [{ count: successExecs }] } = await db.pool.query(`SELECT COUNT(*) as count FROM workflow_executions WHERE status = 'completed'`);
-    const { rows: [{ avg: avgDur }] } = await db.pool.query(`SELECT ROUND(AVG(duration_ms)) as avg FROM workflow_executions WHERE status = 'completed'`);
-    const { rows: [{ count: activeNodes }] } = await db.pool.query(`SELECT COUNT(DISTINCT node_id) as count FROM workflow_step_records`);
-    const { rows: nodeStats } = await db.pool.query(
-      `SELECT node_id, node_label, COUNT(*) as total, COUNT(*) FILTER (WHERE status = 'success') as success, ROUND(AVG(duration_ms)) as avg_ms
-       FROM workflow_step_records GROUP BY node_id, node_label ORDER BY total DESC`
-    );
-    const { rows: trend } = await db.pool.query(
-      `SELECT DATE(started_at) as date, COUNT(*) as total, COUNT(*) FILTER (WHERE status = 'completed') as success, COUNT(*) FILTER (WHERE status = 'failed') as failed
-       FROM workflow_executions WHERE started_at > NOW() - INTERVAL '30 days' GROUP BY DATE(started_at) ORDER BY date DESC`
-    );
-    return c.json({
-      success: true,
-      stats: {
-        totalExecutions: Number(totalExecs),
-        successRate: Number(totalExecs) > 0 ? Math.round(Number(successExecs) / Number(totalExecs) * 100) : 0,
-        avgDurationMs: Number(avgDur) || 0,
-        activeNodes: Number(activeNodes),
-      },
-      nodeStats,
-      trend,
-    });
+    const stats = await db.getWorkflowStats();
+    return c.json({ success: true, stats, nodeStats: stats.nodeStats, trend: stats.trend });
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500);
   } finally {

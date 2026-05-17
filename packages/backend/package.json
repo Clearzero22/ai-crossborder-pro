@@ -36,11 +36,13 @@
     "api:dev": "tsx watch src/api-server.ts"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/pg": "^8.20.0",
     "tsx": "^4.21.0"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.0",
+    "better-sqlite3": "^12.10.0",
     "chrome-launcher": "^1.2.1",
     "chrome-remote-interface": "^0.34.0",
     "dotenv": "^17.4.2",
