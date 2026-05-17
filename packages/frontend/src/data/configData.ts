@@ -1,5 +1,9 @@
 import type { ConfigSection } from '../types';
 
+// 系统配置数据内容
+// 给配置面板提供默认字段
+// 测试时使用的模拟用户数据
+
 export const defaultConfigSections: ConfigSection[] = [
   { id: 'browser-config', title: '浏览器配置', fields: [
     { type: 'select', label: '选择浏览器配置', value: '默认浏览器配置', options: [

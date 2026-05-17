@@ -1,5 +1,8 @@
 import type { NodeExecutor } from '../types';
 
+// 模拟执行器测试使用
+
+
 function delay(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));
 }

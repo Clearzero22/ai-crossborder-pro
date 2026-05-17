@@ -9,6 +9,15 @@ export interface WorkflowTemplate {
   defaultConfigs?: Record<string, Record<string, unknown>>;
 }
 
+// templates.ts 工作流模板库
+// 这是最核心的文件! 定义了预设的工作流模板
+// 五个预设的模板 创建新品上架到Amazon
+// Keyword-mining 关键词挖掘与分析
+// competitor-analysis 竞品全面分析
+// ai-copywriting AI 商品文案生成
+// full-pipeline 全流程自动化
+
+
 export const workflowTemplates: WorkflowTemplate[] = [
   {
     id: 'amazon-product-listing',

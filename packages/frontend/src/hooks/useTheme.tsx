@@ -1,5 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
+// 主题切换
+// 管理亮色/暗色主题 + 主色调(蓝色/靛蓝/紫/绿/橙)
+// 主题设置自动保存到 localStorage 里面
+// 刷新之后仍然保持不变
+// 使用位置 App.tsx -> ThemeProvider -> 包裹整个应用
 type ThemeMode = 'light' | 'dark';
 export type PrimaryColor = 'blue' | 'indigo' | 'violet' | 'emerald' | 'orange';
 

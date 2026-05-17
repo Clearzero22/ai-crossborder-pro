@@ -1,5 +1,10 @@
 import type { NavItem } from '../types';
 
+// 侧边导航菜单
+// 用途 Siderbar 组件渲染左侧导航菜单
+// 增加页面直接在这里面增加
+
+
 export const navItems: NavItem[] = [
   { id: 'home', label: '首页概览', icon: 'home' },
   { id: 'workflow', label: '工作流', icon: 'workflow', active: true },

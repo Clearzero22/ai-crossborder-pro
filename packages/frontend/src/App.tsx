@@ -22,8 +22,10 @@ import { getTemplateById } from './data/templates';
 import { SoundProvider } from './hooks/useSoundSettings';
 import { PlanProvider } from './context/PlanContext';
 
+// websocket 连接地址
 const WS_URL = (import.meta as any).env?.VITE_PLAN_WS_URL || 'ws://localhost:8080/plan-updates';
 
+// 页面边标题映射
 const pageTitles: Record<string, string> = {
   home: '首页概览',
   workflow: '工作流编辑器',

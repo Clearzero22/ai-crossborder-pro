@@ -1,6 +1,9 @@
 import { DataBus } from './DataBus';
 import type { NodeExecutor, EngineCallbacks, EngineNode, ExecutionMode } from './types';
 
+// 工作流执行引擎，使用引擎
+
+
 export class WorkflowEngine {
   private executors = new Map<string, NodeExecutor>();
   private abortController: AbortController | null = null;

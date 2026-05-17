@@ -2,6 +2,7 @@
  * NodePlugin —— 节点的完整定义
  *
  * 【开发者接入新节点只需要创建这个文件】
+ *  插件节点的类型定义
  */
 import type { NodeExecutor } from '../engine/types';
 

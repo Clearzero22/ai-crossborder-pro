@@ -13,6 +13,9 @@ import type { PlanContextValue, PlanState, PlanResponse, FeatureCheckResult } fr
 
 const PlanContext = createContext<PlanContextValue | null>(null);
 
+// 这个文件是 「套餐/订阅管理 Context」，用来管理用户的付费套餐状态。
+
+
 interface PlanProviderProps {
   children: ReactNode;
   wsUrl?: string;

@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
+// 管理执行音效的音效开关
+
+
 export interface SoundSettings {
   nodeComplete: boolean;
   workflowComplete: boolean;

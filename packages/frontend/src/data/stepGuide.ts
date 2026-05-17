@@ -1,5 +1,7 @@
 import type { StepGuideItem } from '../types';
 
+// stepGuide.ts 新手指引步骤
+// Canvas 组件显示在画布上的新手指导
 export const stepGuideItems: StepGuideItem[] = [
   { step: 1, title: '选择模板', description: '或从空白创建新的工作流', completed: false },
   { step: 2, title: '添加节点', description: '从左侧选择节点拖拽到画布', completed: false },

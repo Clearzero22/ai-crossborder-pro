@@ -1,3 +1,5 @@
+
+// 类型定义
 /** Schema definition for a single configuration or data field */
 export interface FieldDef {
   type: 'string' | 'number' | 'boolean' | 'select' | 'string[]' | 'secret' | 'object';

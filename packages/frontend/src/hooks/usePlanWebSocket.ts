@@ -2,6 +2,15 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { PlanUpdateMessage } from '../types/plan';
 
+// 管理与后端的WebSocket 连接，实时接受套餐更新
+
+// 自动重连
+// 连接断开后自动重连
+// 指数退避策略 1s -> 2s -> 4s -> .... -> 最多30秒
+// 最多重连 10 次
+
+// PlanContext -> 用它连接并接受套餐更新
+
 interface UsePlanWebSocketOptions {
   wsUrl: string;
   onMessage: (message: PlanUpdateMessage) => void;

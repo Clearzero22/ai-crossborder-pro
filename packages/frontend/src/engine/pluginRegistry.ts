@@ -1,6 +1,6 @@
 /**
  * PluginRegistry —— 插件注册中心
- *
+ * 插件注册中心
  * 所有插件注册到这里后，自动生成：
  * - Canvas 使用的 workflowNodes
  * - 左侧面板的 NodeGroup

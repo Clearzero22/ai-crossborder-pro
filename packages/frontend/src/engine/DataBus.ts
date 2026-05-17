@@ -1,4 +1,8 @@
 /** Data bus for passing data between workflow steps */
+
+// 数据总线
+
+
 export class DataBus {
   private outputs = new Map<string, Record<string, unknown>>();
 

@@ -10,6 +10,21 @@ import { getTemplateById, workflowTemplates } from '../data/templates';
 
 // ─── 执行数据持久化 ──────────────────────────────────────────
 
+//  工作流的状态管理(核心这个是最核心的hook，负责管理工作流编辑器的所有状态)
+
+// 1. 内部机制
+// 1. 创建 WorkFlowEngine 实例
+// 2. 注册所有执行器
+// 3. 初始化默认配置
+
+// 2. 执行时
+// 1. 调用engine.execute()
+// 2. 通过 callbacks 接受状态更新
+// 3. 更新 state (节点状态、日志、进度)
+// 4. 播放音效 (如果开启)
+// 5. 持久化到后端 (调用 /apo/workflow/...)
+
+
 async function persist(url: string, body: Record<string, unknown>) {
   try {
     await fetch(url, {
@@ -45,23 +60,23 @@ function defaultWorkflowNodeIds(): string[] {
 }
 
 const initialState: WorkflowState = {
-  selectedNodeId: 'open-amazon',
-  zoomLevel: 100,
-  workflowEnabled: true,
-  activeTab: 'config',
-  navActiveId: 'workflow',
-  sidebarCollapsed: false,
-  executing: false,
-  currentStep: 0,
-  totalSteps: 0,
-  nodeStatuses: {},
-  stepOutputs: {},
-  executionLogs: [],
-  workflowNodeIds: [],
-  activeTemplateId: null,
-  executionMode: 'auto',
-  waitingForNext: false,
-  waitingNodeId: null,
+  selectedNodeId: 'open-amazon', // 选中的节点
+  zoomLevel: 100, // 画布缩放
+  workflowEnabled: true, // 工作流开关
+  activeTab: 'config', // 右边画板的标签
+  navActiveId: 'workflow', // 导航栏的选中项
+  sidebarCollapsed: false, // 侧边栏是否折叠
+  executing: false, // 是否在执行
+  currentStep: 0, // 当前执行到第几步
+  totalSteps: 0, // 总步数
+  nodeStatuses: {}, // 每个节点的状态 (idle/running/success/error)
+  stepOutputs: {}, //每个节点的输出数据
+  executionLogs: [], //执行日志
+  workflowNodeIds: [], // 工作节点ID 顺序
+  activeTemplateId: null, // 当前模板ID
+  executionMode: 'auto', // auto - manual 执行模式
+  waitingForNext: false, // 是否在等待手动执行下一步
+  waitingNodeId: null, // 等待的节点IDW
 };
 
 export function useWorkflowState() {
