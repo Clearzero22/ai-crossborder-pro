@@ -17,7 +17,7 @@ export interface GeminiFileOptions {
   filePath: string;
   /** 提示词文本 */
   prompt: string;
-  /** 是否 headless 模式（默认 true） */
+  /** 是否 headless 模式（默认 false） */
   headless?: boolean;
   /** 等待回复超时时间（毫秒，默认 60000） */
   responseTimeout?: number;
@@ -38,8 +38,77 @@ export interface GeminiFileResult {
 export class GeminiFileService {
   private context: BrowserContext | null = null;
 
+  private async launchBrowser(headless = false): Promise<BrowserContext> {
+    const sharedProfileDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
+
+    this.context = await chromium.launchPersistentContext(sharedProfileDir, {
+      headless,
+      channel: 'chrome',
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-extensions',
+        '--start-maximized',
+        '--disable-infobars',
+        '--disable-web-security',
+        '--disable-popup-blocking',
+        '--ignore-certificate-errors',
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-translate',
+        '--disable-save-password-bubble',
+      ],
+      viewport: null,
+      locale: 'zh-CN',
+      ignoreDefaultArgs: ['--enable-automation', '--enable-blink-features=IdleDetection'],
+    });
+
+    // Anti-detection init script
+    await this.context.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+
+      (window as any).chrome = { runtime: {}, loadTimes: function() {}, csi: function() {}, app: {} };
+
+      Object.defineProperty(navigator, 'plugins', {
+        get: () => [
+          { 0: { type: 'application/x-google-chrome-pdf', suffixes: 'pdf', description: 'Portable Document Format' }, description: 'Portable Document Format', filename: 'internal-pdf-viewer', length: 1, name: 'Chrome PDF Plugin' },
+          { 0: { type: 'application/pdf', suffixes: 'pdf', description: '' }, description: '', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', length: 1, name: 'Chrome PDF Viewer' },
+          { 0: { type: 'application/x-nacl', suffixes: '', description: 'Native Client Executable' }, 1: { type: 'application/x-pnacl', suffixes: '', description: 'Portable Native Client Executable' }, description: '', filename: 'internal-nacl-plugin', length: 2, name: 'Native Client' },
+        ],
+      });
+
+      Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en', 'zh-CN', 'zh'] });
+
+      const originalQuery = (navigator as any).permissions.query;
+      (navigator as any).permissions.query = (parameters: any) =>
+        parameters.name === 'notifications'
+          ? Promise.resolve({ state: Notification.permission })
+          : originalQuery(parameters);
+
+      delete (window as any).__playwright;
+      delete (window as any).__pw_manual;
+      delete (window as any).__pw_inspect;
+
+      Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
+      Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 });
+      Object.defineProperty(navigator, 'connection', { get: () => ({ effectiveType: '4g', rtt: 50, downlink: 10, saveData: false }) });
+
+      const getParameter = WebGLRenderingContext.prototype.getParameter;
+      WebGLRenderingContext.prototype.getParameter = function(parameter: number) {
+        if (parameter === 37445) return 'Intel Inc.';
+        if (parameter === 37446) return 'Intel Iris OpenGL Engine';
+        return getParameter.call(this, parameter);
+      };
+    });
+
+    return this.context;
+  }
+
   async upload(options: GeminiFileOptions): Promise<GeminiFileResult> {
-    const { filePath, prompt, headless = true, responseTimeout = 60000 } = options;
+    const { filePath, prompt, headless = false, responseTimeout = 60000 } = options;
 
     // 验证文件存在
     if (!fs.existsSync(filePath)) {
@@ -54,14 +123,7 @@ export class GeminiFileService {
       };
     }
 
-    // 使用共享的浏览器数据目录
-    const sharedProfileDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
-
-    this.context = await chromium.launchPersistentContext(sharedProfileDir, {
-      headless,
-      viewport: { width: 1280, height: 900 },
-      locale: 'zh-CN',
-    });
+    await this.launchBrowser(headless);
 
     try {
       const page = this.context.pages()[0] || await this.context.newPage();
@@ -265,14 +327,9 @@ export class GeminiFileService {
 
   /** Pure text chat without file upload */
   async chat(prompt: string, options?: { headless?: boolean; responseTimeout?: number }): Promise<GeminiFileResult> {
-    const { headless = true, responseTimeout = 90000 } = options || {};
+    const { headless = false, responseTimeout = 90000 } = options || {};
 
-    const sharedProfileDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
-    this.context = await chromium.launchPersistentContext(sharedProfileDir, {
-      headless,
-      viewport: { width: 1280, height: 900 },
-      locale: 'zh-CN',
-    });
+    await this.launchBrowser(headless);
 
     try {
       const page = this.context.pages()[0] || await this.context.newPage();
