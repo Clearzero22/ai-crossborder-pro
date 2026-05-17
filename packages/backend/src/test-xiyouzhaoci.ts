@@ -1,5 +1,6 @@
 import { launchPersistent, getPageFromContext, log, sleep, checkLoginStatus, screenshot } from './utils';
 
+// it is works
 async function test() {
   log('🚀 开始测试 xiyouzhaoci...', 'info');
 
@@ -9,12 +10,12 @@ async function test() {
     log('✅ 浏览器已启动（持久化模式）', 'success');
 
     // 获取页面
-    const page = await getPageFromContdext(context);
+    const page = await getPageFromContext(context);
 
     // 访问网站
     log('🌐 正在打开 https://www.xiyouzhaoci.com/...', 'info');
     await page.goto('https://www.xiyouzhaoci.com/', {
-      timeout: 30000,enen
+      timeout: 30000,
       waitUntil: 'domcontentloaded'
     });
 

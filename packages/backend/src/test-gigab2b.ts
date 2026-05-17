@@ -2,6 +2,7 @@ import { launchPersistent, getPageFromContext, log, sleep, screenshot } from './
 import * as fs from 'fs';
 import * as path from 'path';
 
+// it is work
 /**
  * GigaB2B 产品数据抓取测试
  *

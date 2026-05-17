@@ -1,5 +1,6 @@
 import { launchPersistent, getPageFromContext, log, sleep, checkLoginStatus, screenshot } from './utils';
 
+// Ii is work 
 async function test() {
   log('🚀 开始测试 Taobao...', 'info');
 

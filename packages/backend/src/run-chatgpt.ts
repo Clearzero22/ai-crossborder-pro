@@ -12,12 +12,13 @@
  *   npm run run:chatgpt -- --file img.png --prompt "分析" --timeout 120000
  */
 
+// it is works
 import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
 
 const API_BASE = 'http://localhost:3456';
-const DEFAULT_FILE = path.join(__dirname, '../output/gemini-cdp-result.png');
+const DEFAULT_FILE = path.join(__dirname, './testimages/gigab2b-image-viewer.png');
 const DEFAULT_PROMPT = '请用中文描述这张图片的内容';
 
 function parseArgs(): { filePath: string; prompt: string; timeout: number } {

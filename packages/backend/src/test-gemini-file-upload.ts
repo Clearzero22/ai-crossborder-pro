@@ -16,6 +16,7 @@ import os from 'os';
  * 7. 保存回复
  */
 
+// it is noe works
 async function testGeminiFileUpload() {
   log('='.repeat(60), 'info');
   log('🚀 Gemini 文件上传测试（隐身模式）', 'info');

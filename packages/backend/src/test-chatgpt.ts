@@ -1,5 +1,6 @@
 import { launchPersistent, getPageFromContext, log, sleep, checkLoginStatus, screenshot } from './utils';
 
+// it is works
 async function test() {
   log('🚀 开始测试 ChatGPT...', 'info');
 

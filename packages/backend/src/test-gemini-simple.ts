@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import os from 'os';
 
+// it is not works
 async function testGeminiSimple() {
   console.log('🚀 启动 Gemini (简单模式)...');
   

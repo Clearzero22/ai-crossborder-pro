@@ -1,6 +1,8 @@
 import { launchPersistent, getPageFromContext, log, sleep } from './utils';
 import * as path from 'path';
 
+// it is works
+
 /**
  * ChatGPT 上传文件并发送消息测试
  *

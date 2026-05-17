@@ -2,6 +2,7 @@ import { launchPersistent, getPageFromContext, log, sleep } from './utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// not works has problems
 /**
  * 豆包 Amazon Listing 生成器
  *

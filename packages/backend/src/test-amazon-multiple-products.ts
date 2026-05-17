@@ -2,6 +2,8 @@ import { launchPersistent, log, sleep } from './utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// it is works
+
 /**
  * Amazon 多产品并行抓取测试
  *

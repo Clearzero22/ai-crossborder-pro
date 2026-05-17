@@ -2,6 +2,7 @@ import { launchPersistent, getPageFromContext, log, sleep, screenshot } from './
 import * as fs from 'fs';
 import * as path from 'path';
 
+// it is work
 interface ProductData {
   url: string;
   title: string;

@@ -2,6 +2,7 @@ import { launchPersistent, getPageFromContext, log, sleep } from './utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// it is wokk
 /**
  * Amazon Listing 生成器 - 使用竞品分析
  *

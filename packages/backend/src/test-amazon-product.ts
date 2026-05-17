@@ -2,6 +2,7 @@ import { launchPersistent, getPageFromContext, log, sleep } from './utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// it is works
 /**
  * Amazon 产品详情抓取测试
  *
@@ -11,7 +12,7 @@ import * as path from 'path';
  * 3. 抓取五点描述（Bullet Points）
  * 4. 抓取长描述（Product Description）
  * 5. 保存为 JSON 和 TXT 格式
- */··
+ */
 
 interface ProductDetails {
   url: string;

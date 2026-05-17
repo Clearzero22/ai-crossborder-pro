@@ -7,6 +7,7 @@ import { launchPersistent, log, sleep, screenshot } from './utils';
  * 适用场景：需要同时操作多个页面，提高效率
  */
 
+// it is works
 async function testMultiPages() {
   log('='.repeat(60), 'info');
   log('🚀 单Context多Pages测试', 'info');

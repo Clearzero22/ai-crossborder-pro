@@ -2,6 +2,7 @@ import { launchPersistent, getPageFromContext, log, sleep } from './utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// it is works
 /**
  * Amazon 产品详情完整抓取测试
  *
