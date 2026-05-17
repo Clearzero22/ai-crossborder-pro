@@ -126,7 +126,7 @@ export class GeminiFileService {
     await this.launchBrowser(headless);
 
     try {
-      const page = this.context.pages()[0] || await this.context.newPage();
+      const page = this.context!.pages()[0] || await this.context!.newPage();
 
       // 访问 Gemini
       await page.goto('https://gemini.google.com/app', {
@@ -332,7 +332,7 @@ export class GeminiFileService {
     await this.launchBrowser(headless);
 
     try {
-      const page = this.context.pages()[0] || await this.context.newPage();
+      const page = this.context!.pages()[0] || await this.context!.newPage();
       await page.goto('https://gemini.google.com/app', { timeout: 30000, waitUntil: 'domcontentloaded' });
       await this.sleep(3000);
 
@@ -391,7 +391,7 @@ export class GeminiFileService {
         responseText = await page.evaluate(() => {
           for (const sel of ['[data-test-id="model-verbose-text"]', '.response-content', '.model-response']) {
             const el = document.querySelector(sel);
-            if (el?.textContent?.trim()?.length > 10) return el.textContent!.trim();
+            if (el && el.textContent?.trim()?.length > 10) return el.textContent.trim();
           }
           return '';
         });

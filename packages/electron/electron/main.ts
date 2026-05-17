@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as os from 'os';
+import * as fs from 'fs';
 import { startBackend, stopBackend, waitForReady } from './backend-launcher';
 
 let mainWindow: BrowserWindow | null = null;
@@ -62,9 +63,13 @@ async function onReady(): Promise<void> {
   const chromeDataDir = getChromeDataDir();
   const port = 3456;
 
+  console.log(`[Main] resourcesPath: ${app.getAppPath()}`);
+  console.log(`[Main] process.resourcesPath: ${process.resourcesPath}`);
   console.log(`[Main] Starting backend: ${backendDistDir}`);
   console.log(`[Main] Chrome data dir: ${chromeDataDir}`);
   console.log(`[Main] Frontend dir: ${frontendDistDir}`);
+  console.log(`[Main] Frontend dir exists: ${fs.existsSync(frontendDistDir)}`);
+  console.log(`[Main] index.html exists: ${fs.existsSync(path.join(frontendDistDir, 'index.html'))}`);
 
   const nodeModulesDir = resolvePath('backend_node_modules');
 
