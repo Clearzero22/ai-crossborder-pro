@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 import { startBackend, stopBackend, waitForReady } from './backend-launcher';
+import { initAutoUpdater, skipVersion } from './updater';
 
 // API key names to forward from .env to the backend process
 const API_KEY_ENV_VARS = [
@@ -85,6 +86,9 @@ function createWindow(): void {
 async function onReady(): Promise<void> {
   if (isDev) {
     createWindow();
+    if (mainWindow) {
+      initAutoUpdater(mainWindow);
+    }
     return;
   }
 
@@ -123,11 +127,17 @@ async function onReady(): Promise<void> {
   } catch (err) {
     console.error('[Main] Backend failed to start:', err);
     createWindow();
+    if (mainWindow) {
+      initAutoUpdater(mainWindow);
+    }
     return;
   }
 
   process.env.BACKEND_PORT = String(port);
   createWindow();
+  if (mainWindow) {
+    initAutoUpdater(mainWindow);
+  }
 }
 
 // ── IPC handlers ──
@@ -143,6 +153,12 @@ ipcMain.handle('get-chrome-path', () => {
   }
   return '/usr/bin/google-chrome';
 });
+
+ipcMain.handle('skip-version', (_event, version: string) => {
+  skipVersion(version);
+});
+
+ipcMain.handle('get-current-version', () => app.getVersion());
 
 app.whenReady().then(onReady);
 
