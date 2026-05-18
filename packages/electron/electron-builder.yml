@@ -48,6 +48,11 @@ linux:
   category: Development
   artifactName: AI-CrossBorder-Pro-${version}-linux-${arch}.${ext}
 
+publish:
+  provider: github
+  owner: Clearzero22
+  repo: ai-crossborder-pro
+
 extraResources:
   - from: backend-dist
     to: backend-dist
