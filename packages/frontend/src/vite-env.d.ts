@@ -13,12 +13,27 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+interface UpdateInfo {
+  version: string;
+  releaseNotes: string;
+  releaseDate: string;
+}
+
 interface ElectronAPI {
   getPlatform: () => string;
   getUserDataPath: () => Promise<string>;
   getChromePath: () => Promise<string>;
   openExternal: (url: string) => void;
   onBackendReady: (callback: () => void) => () => void;
+  onUpdateAvailable: (callback: (info: UpdateInfo) => void) => () => void;
+  onUpdateDownloadProgress: (callback: (progress: { percent: number }) => void) => () => void;
+  onUpdateDownloaded: (callback: (info: { version: string }) => void) => () => void;
+  onUpdateNotAvailable: (callback: () => void) => () => void;
+  downloadUpdate: () => Promise<void>;
+  installUpdate: () => Promise<void>;
+  skipVersion: (version: string) => Promise<void>;
+  checkForUpdates: () => Promise<void>;
+  getCurrentVersion: () => Promise<string>;
 }
 
 declare global {
@@ -26,3 +41,5 @@ declare global {
     electronAPI?: ElectronAPI;
   }
 }
+
+export {};
