@@ -5,6 +5,7 @@
 import { useTheme } from '../hooks/useTheme';
 import type { PrimaryColor } from '../hooks/useTheme';
 import { useSoundSettings } from '../hooks/useSoundSettings';
+import SoftwareUpdateSection from '../components/SoftwareUpdateSection';
 
 interface SettingSection {
   id: string;
@@ -249,6 +250,9 @@ export default function SettingsPage() {
 
           {/* 外观设置 */}
           <AppearanceSection />
+
+          {/* 软件更新 */}
+          <SoftwareUpdateSection />
         </div>
 
         {/* 底部操作 */}

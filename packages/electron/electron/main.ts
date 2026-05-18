@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 import { startBackend, stopBackend, waitForReady } from './backend-launcher';
-import { initAutoUpdater, skipVersion } from './updater';
+import { initAutoUpdater, skipVersion, downloadUpdate, installUpdate, checkForUpdates } from './updater';
 
 // API key names to forward from .env to the backend process
 const API_KEY_ENV_VARS = [
@@ -156,6 +156,18 @@ ipcMain.handle('get-chrome-path', () => {
 
 ipcMain.handle('skip-version', (_event, version: string) => {
   skipVersion(version);
+});
+
+ipcMain.handle('download-update', () => {
+  downloadUpdate();
+});
+
+ipcMain.handle('install-update', () => {
+  installUpdate();
+});
+
+ipcMain.handle('check-for-updates', () => {
+  checkForUpdates();
 });
 
 ipcMain.handle('get-current-version', () => app.getVersion());

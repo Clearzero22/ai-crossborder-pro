@@ -26,7 +26,13 @@ interface ElectronAPI {
   openExternal: (url: string) => void;
   onBackendReady: (callback: () => void) => () => void;
   onUpdateAvailable: (callback: (info: UpdateInfo) => void) => () => void;
+  onUpdateDownloadProgress: (callback: (progress: { percent: number }) => void) => () => void;
+  onUpdateDownloaded: (callback: (info: { version: string }) => void) => () => void;
+  onUpdateNotAvailable: (callback: () => void) => () => void;
+  downloadUpdate: () => Promise<void>;
+  installUpdate: () => Promise<void>;
   skipVersion: (version: string) => Promise<void>;
+  checkForUpdates: () => Promise<void>;
   getCurrentVersion: () => Promise<string>;
 }
 

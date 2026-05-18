@@ -3,7 +3,7 @@ productName: AI CrossBorder Pro
 copyright: Copyright 2026 Clearzero2
 
 directories:
-  output: release5
+  output: release6
   buildResources: resources
 
 files:
@@ -52,6 +52,7 @@ publish:
   provider: github
   owner: Clearzero22
   repo: ai-crossborder-pro
+  releaseType: release
 
 extraResources:
   - from: backend-dist

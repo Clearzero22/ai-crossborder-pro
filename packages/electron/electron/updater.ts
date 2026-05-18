@@ -9,6 +9,13 @@ interface UpdateInfo {
   releaseDate: string;
 }
 
+interface DownloadProgress {
+  percent: number;
+  transferred: number;
+  total: number;
+  speed: number;
+}
+
 const CONFIG_FILE = 'update-config.json';
 
 function getConfigPath(): string {
@@ -35,7 +42,17 @@ function saveConfig(config: { skippedVersion: string | null }): void {
 
 export function initAutoUpdater(mainWindow: BrowserWindow): void {
   autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.forceDevUpdateConfig = true;
+
+  if (!app.isPackaged) {
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'Clearzero22',
+      repo: 'ai-crossborder-pro',
+      token: process.env.GH_TOKEN,
+    });
+  }
 
   autoUpdater.on('update-available', (info) => {
     const updateInfo: UpdateInfo = {
@@ -56,8 +73,24 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
     mainWindow.webContents.send('update-available', updateInfo);
   });
 
+  autoUpdater.on('download-progress', (progress) => {
+    const progressInfo: DownloadProgress = {
+      percent: progress.percent,
+      transferred: progress.transferred,
+      total: progress.total,
+      speed: progress.bytesPerSecond,
+    };
+    mainWindow.webContents.send('update-download-progress', progressInfo);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log(`[AutoUpdate] Update downloaded: ${info.version}`);
+    mainWindow.webContents.send('update-downloaded', { version: info.version });
+  });
+
   autoUpdater.on('update-not-available', () => {
     console.log('[AutoUpdate] App is up to date');
+    mainWindow.webContents.send('update-not-available');
   });
 
   autoUpdater.on('error', (err) => {
@@ -66,6 +99,22 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
 
   autoUpdater.checkForUpdates().catch((err) => {
     console.error('[AutoUpdate] Failed to check for updates:', (err as Error).message);
+  });
+}
+
+export function downloadUpdate(): void {
+  autoUpdater.downloadUpdate().catch((err) => {
+    console.error('[AutoUpdate] Download failed:', (err as Error).message);
+  });
+}
+
+export function installUpdate(): void {
+  autoUpdater.quitAndInstall();
+}
+
+export function checkForUpdates(): void {
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error('[AutoUpdate] Manual check failed:', (err as Error).message);
   });
 }
 
