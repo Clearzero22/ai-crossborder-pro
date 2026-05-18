@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import PlanAlert from './PlanAlert';
+import UpdateNotifier from './UpdateNotifier';
 
 interface LayoutProps {
   sidebar: ReactNode;
@@ -27,6 +28,7 @@ export default function Layout({ sidebar, header, mainContent, userOverlay, mobi
 
       <main className="flex-1 flex flex-col min-w-0">
         <PlanAlert />
+        <UpdateNotifier />
         {header}
         {mainContent}
       </main>
