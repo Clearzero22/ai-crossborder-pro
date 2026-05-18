@@ -20,4 +20,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('backend-ready', handler);
     return () => ipcRenderer.removeListener('backend-ready', handler);
   },
+
+  onUpdateAvailable: (callback: (info: { version: string; releaseNotes: string; releaseDate: string }) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, info: { version: string; releaseNotes: string; releaseDate: string }): void => callback(info);
+    ipcRenderer.on('update-available', handler);
+    return () => ipcRenderer.removeListener('update-available', handler);
+  },
+
+  skipVersion: (version: string): Promise<void> =>
+    ipcRenderer.invoke('skip-version', version),
+
+  getCurrentVersion: (): Promise<string> =>
+    ipcRenderer.invoke('get-current-version'),
 });
