@@ -33,6 +33,21 @@ export class DatabaseService {
     await this.driver.disconnect();
   }
 
+  async getSetting(key: string): Promise<string | null> {
+    const result = await this.query(
+      "SELECT value FROM settings WHERE key = $1",
+      [key],
+    );
+    return result.rows.length > 0 ? (result.rows[0].value as string) : null;
+  }
+
+  async setSetting(key: string, value: string): Promise<void> {
+    await this.query(
+      "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET value = $2, updated_at = datetime('now')",
+      [key, value],
+    );
+  }
+
   async query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[]; rowCount: number }> {
     return this.driver.query(sql, params);
   }

@@ -130,6 +130,12 @@ CREATE TABLE IF NOT EXISTS workflow_execution_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_logs_execution ON workflow_execution_logs(execution_id);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `;
 
 // JSON columns that SQLite stores as TEXT but should be returned as parsed objects
@@ -169,9 +175,9 @@ export class SqliteDriver implements IDatabaseDriver {
     this.db.pragma('busy_timeout = 5000');
 
     const version = this.db.pragma('user_version', { simple: true }) as number;
-    if (version < 1) {
+    if (version < 2) {
       this.db.exec(SQLITE_SCHEMA);
-      this.db.pragma('user_version = 1');
+      this.db.pragma('user_version = 2');
     }
   }
 

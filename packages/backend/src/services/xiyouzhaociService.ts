@@ -8,6 +8,7 @@ import { chromium, type Page } from 'playwright';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { browserConfig } from '../core/browser-config';
 
 // 统一使用共享的浏览器数据目录
 const DATA_DIR = join(homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
@@ -205,6 +206,7 @@ export async function scrapeXiyouzhaociKeywords(
   console.log(`[Xiyouzhaoci] Using shared browser profile: ${DATA_DIR}`);
 
   const context = await chromium.launchPersistentContext(DATA_DIR, {
+    ...await browserConfig.getLaunchOptions(),
     headless,
     viewport: { width: 1280, height: 720 },
     locale: 'zh-CN',

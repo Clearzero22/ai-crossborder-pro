@@ -20,6 +20,7 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import { navItems } from './data/navItems';
 import { getTemplateById } from './data/templates';
 import { SoundProvider } from './hooks/useSoundSettings';
+import { BrowserSettingsProvider } from './hooks/useBrowserSettings';
 import { PlanProvider } from './context/PlanContext';
 
 // websocket 连接地址
@@ -175,7 +176,9 @@ export default function App() {
   return (
     <PlanProvider wsUrl={WS_URL}>
       <SoundProvider>
-        <AppContent />
+        <BrowserSettingsProvider>
+          <AppContent />
+        </BrowserSettingsProvider>
       </SoundProvider>
     </PlanProvider>
   );

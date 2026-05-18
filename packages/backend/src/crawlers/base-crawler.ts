@@ -1,6 +1,7 @@
 import { Page } from 'playwright';
 import { RunContext } from '../core/run-context';
 import { DatabaseService } from '../core/database-service';
+import { browserConfig } from '../core/browser-config';
 
 /** 爬虫运行时的选项 */
 export interface CrawlerOptions {
@@ -61,9 +62,11 @@ export abstract class BaseCrawler<TStaging, TClean> {
 
     try {
       const { chromium } = await import('playwright');
+      const launchExtras = await browserConfig.getLaunchOptions();
       const context = await chromium.launchPersistentContext(
         run.dirs.root + '/chrome-profile',
         {
+          ...launchExtras,
           headless: true,
           args: ['--no-sandbox'],
         }

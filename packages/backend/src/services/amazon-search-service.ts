@@ -5,6 +5,7 @@
  */
 
 import { chromium, type BrowserContext } from 'playwright';
+import { browserConfig } from '../core/browser-config';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -24,7 +25,9 @@ export class AmazonSearchService {
 
     if (!this.context) {
       console.log(`[Playwright] Launching browser (headless: ${options.headless !== false ? 'true' : 'false'})...`);
+      const launchExtras = await browserConfig.getLaunchOptions();
       this.context = await chromium.launchPersistentContext(userDataDir, {
+        ...launchExtras,
         headless: options.headless !== false,
         viewport: { width: 1280, height: 900 },
         locale: 'en-US',

@@ -34,6 +34,7 @@ import { DatabaseService } from './core/database-service';
 import * as xiyouzhaociService from './services/xiyouzhaociService';
 import { GeminiFileService } from './services/gemini-file-service';
 import { ChatGPTFileService } from './services/chatgpt-file-service';
+import { browserConfig } from './core/browser-config';
 
 // ─── 配置 ────────────────────────────────────────────────────
 
@@ -1013,6 +1014,123 @@ app.get('/api/workflow/stats', async (c) => {
   } finally {
     await db.disconnect();
   }
+});
+
+// ─── 浏览器配置 API ───────────────────────────────────────────
+
+app.get('/api/settings/browser', async (c) => {
+  const db = createDb();
+  if (db) {
+    try {
+      await db.connect();
+      browserConfig.setDb(db);
+      await db.disconnect();
+    } catch { /* DB not available, use defaults */ }
+  }
+  try {
+    const settings = await browserConfig.getConfig();
+    const chromeStatus = browserConfig.checkChromeExists();
+    const playwrightStatus = browserConfig.checkPlaywrightStatus(settings.playwrightPath);
+    return c.json({ settings, status: { chrome: chromeStatus, playwright: playwrightStatus } });
+  } catch (err) {
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+app.put('/api/settings/browser', async (c) => {
+  const db = createDb();
+  if (db) {
+    try {
+      await db.connect();
+      browserConfig.setDb(db);
+      await db.disconnect();
+    } catch { /* DB not available */ }
+  }
+  try {
+    const body = await c.req.json();
+    const updated = await browserConfig.updateConfig({
+      mode: body.mode,
+      playwrightPath: body.playwrightPath,
+    });
+    return c.json({ settings: updated });
+  } catch (err) {
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+app.post('/api/settings/browser/test', async (c) => {
+  try {
+    const { chromium } = await import('playwright');
+    const launchOpts = await browserConfig.getLaunchOptions();
+    const browser = await chromium.launch({
+      ...launchOpts,
+      headless: true,
+      args: ['--no-sandbox'],
+    });
+    const version = browser.version();
+    await browser.close();
+    return c.json({ success: true, version, browserName: browser.browserType().name() });
+  } catch (err) {
+    return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
+app.get('/api/settings/browser/versions', async (c) => {
+  return c.json({
+    chromium: {
+      revision: 1217,
+      version: browserConfig.getChromiumVersion(),
+      title: 'Chrome for Testing',
+      platforms: {
+        win32: 'win64',
+        darwin: process.arch === 'arm64' ? 'mac-arm64' : 'mac',
+        linux: 'linux64',
+      },
+    },
+  });
+});
+
+app.post('/api/settings/browser/download', async (c) => {
+  const body = await c.req.json();
+  const targetPath: string = body.path;
+  if (!targetPath) return c.json({ error: 'path is required' }, 400);
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const send = (data: object) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      };
+
+      send({ type: 'progress', percent: 0, stage: '开始下载 Chromium...' });
+
+      const db = createDb();
+      if (db) {
+        try { await db.connect(); browserConfig.setDb(db); } catch { /* ignore */ }
+      }
+
+      const result = await browserConfig.downloadPlaywrightChromium(targetPath, (p) => {
+        send({ type: 'progress', ...p });
+      });
+
+      if (result.success) {
+        await browserConfig.updateConfig({ mode: 'playwright-chromium', playwrightPath: targetPath });
+        send({ type: 'complete', path: targetPath });
+      } else {
+        send({ type: 'error', error: result.error });
+      }
+
+      if (db) {
+        try { await db.disconnect(); } catch { /* ignore */ }
+      }
+
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+  });
 });
 
 // ─── 全局错误处理 ────────────────────────────────────────────

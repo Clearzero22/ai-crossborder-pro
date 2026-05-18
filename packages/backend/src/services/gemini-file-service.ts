@@ -6,6 +6,7 @@
  */
 
 import { chromium, type BrowserContext } from 'playwright';
+import { browserConfig } from '../core/browser-config';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -42,8 +43,8 @@ export class GeminiFileService {
     const sharedProfileDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
 
     this.context = await chromium.launchPersistentContext(sharedProfileDir, {
+      ...await browserConfig.getLaunchOptions(),
       headless,
-      channel: 'chrome',
       args: [
         '--disable-blink-features=AutomationControlled',
         '--no-sandbox',

@@ -198,6 +198,8 @@ export async function scrapeXiyouzhaociKeywords(
   console.log(`[Xiyouzhaoci] Starting scrape for ASIN: ${asin}`);
 
   const context = await chromium.launchPersistentContext(DATA_DIR, {
+    channel: process.env.BROWSER_MODE === 'playwright-chromium' ? undefined : 'chrome',
+    ...(process.env.BROWSER_PLAYWRIGHT_PATH ? { executablePath: process.env.BROWSER_PLAYWRIGHT_PATH } : {}),
     headless,
     viewport: { width: 1280, height: 720 },
     locale: 'zh-CN',

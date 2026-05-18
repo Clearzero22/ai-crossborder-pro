@@ -13,6 +13,7 @@ import { DatabaseService } from '../core/database-service';
 import { RunContext } from '../core/run-context';
 import { GigaB2BCrawler } from '../crawlers/gigab2b/crawler';
 import { ProductRecord, CrawlerRun } from '../core/types';
+import { browserConfig } from '../core/browser-config';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -78,9 +79,10 @@ export class CrawlerService {
       const { chromium } = await import('playwright');
       // ⚠️ 重要：统一使用共享的浏览器数据目录
       const sharedProfileDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
+      const launchExtras = await browserConfig.getLaunchOptions();
       const context = await chromium.launchPersistentContext(
         sharedProfileDir,
-        { headless, args: ['--no-sandbox'] }
+        { ...launchExtras, headless, args: ['--no-sandbox'] }
       );
       const page = await context.newPage();
 

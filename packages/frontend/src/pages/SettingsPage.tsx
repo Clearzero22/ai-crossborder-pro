@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import type { PrimaryColor } from '../hooks/useTheme';
 import { useSoundSettings } from '../hooks/useSoundSettings';
 import SoftwareUpdateSection from '../components/SoftwareUpdateSection';
+import BrowserConfigSection from '../components/BrowserConfigSection';
 
 interface SettingSection {
   id: string;
@@ -247,6 +248,9 @@ export default function SettingsPage() {
 
           {/* 声音设置 */}
           <SoundSection />
+
+          {/* 浏览器配置 */}
+          <BrowserConfigSection />
 
           {/* 外观设置 */}
           <AppearanceSection />

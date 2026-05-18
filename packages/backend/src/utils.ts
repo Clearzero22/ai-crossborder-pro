@@ -1,6 +1,7 @@
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import path from 'path';
 import os from 'os';
+import { browserConfig } from './core/browser-config';
 
 // 获取用户数据目录（Electron 打包后使用 CHROME_DATA_DIR 环境变量）
 export function getUserDataDir(profileName?: string): string {
@@ -24,9 +25,10 @@ export async function launchPersistent(userDataDir?: string): Promise<BrowserCon
 
   console.log(`📁 使用用户数据目录: ${dataDir}`);
 
+  const launchExtras = await browserConfig.getLaunchOptions();
   const launchOptions: any = {
+    ...launchExtras,
     headless: false,
-    channel: 'chrome', // 使用本地Chrome
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -67,9 +69,10 @@ export async function launchStealth(userDataDir?: string): Promise<BrowserContex
 
   log('🚀 启动隐身模式浏览器', 'info');
 
+  const launchExtras = await browserConfig.getLaunchOptions();
   const launchOptions: any = {
+    ...launchExtras,
     headless: false,
-    channel: 'chrome',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',

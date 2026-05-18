@@ -6,6 +6,7 @@
  */
 
 import { chromium, type BrowserContext } from 'playwright';
+import { browserConfig } from '../core/browser-config';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -80,6 +81,7 @@ export class AmazonProductService {
     // ⚠️ 重要：统一使用共享的浏览器数据目录
     const sharedUserDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
     this.context = await chromium.launchPersistentContext(sharedUserDataDir, {
+      ...await browserConfig.getLaunchOptions(),
       headless,
       viewport: { width: 1280, height: 900 },
       locale: 'en-US',
