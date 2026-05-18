@@ -20,6 +20,9 @@
     "build:win": "npm run build && npx electron-builder --win --x64 --project packages/electron",
     "prebuild:linux": "node scripts/pre-build-clean.mjs",
     "build:linux": "npm run build && npx electron-builder --linux --project packages/electron",
+    "publish:win": "npm run build:win -- --publish always",
+    "publish:mac": "npm run build:mac -- --publish always",
+    "publish:linux": "npm run build:linux -- --publish always",
     "postinstall": "npx electron-builder install-app-deps",
     "clean": "rm -rf packages/frontend/dist packages/backend/dist packages/electron/dist-electron packages/electron/frontend-dist packages/electron/backend-dist packages/electron/backend_dist_node_modules packages/electron/release"
   },
