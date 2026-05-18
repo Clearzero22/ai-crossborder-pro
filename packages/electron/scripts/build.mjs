@@ -25,13 +25,13 @@ console.log(`  Backend:   ${backendDir}`);
 
 // 1. Copy frontend dist
 console.log('\n[1/3] Copying frontend dist...');
-fs.rmSync(frontendDistDir, { recursive: true, force: true });
+safeRmSync(frontendDistDir, 'frontend-dist');
 copyDir(path.join(frontendDir, 'dist'), frontendDistDir);
 console.log(`  Done: ${frontendDistDir}`);
 
 // 2. Copy backend dist + .env
 console.log('\n[2/3] Copying backend dist...');
-fs.rmSync(backendDistDir, { recursive: true, force: true });
+safeRmSync(backendDistDir, 'backend-dist');
 copyDir(path.join(backendDir, 'dist'), backendDistDir);
 // Copy .env so dotenv/config can load API keys in production
 const envFile = path.join(backendDir, '.env');
@@ -49,11 +49,11 @@ console.log(`  Files: ${fs.readdirSync(backendDistDir).join(', ')}`);
 console.log('\n[3/3] Installing backend production dependencies...');
 const targetNodeModules = path.join(backendDistDir, 'node_modules');
 
-fs.rmSync(targetNodeModules, { recursive: true, force: true });
-fs.rmSync(extraNodeModules, { recursive: true, force: true });
+safeRmSync(targetNodeModules, 'backend-dist/node_modules');
+safeRmSync(extraNodeModules, 'backend_dist_node_modules');
 
 const tmpDir = path.join(electronDir, '.deps-tmp');
-fs.rmSync(tmpDir, { recursive: true, force: true });
+safeRmSync(tmpDir, '.deps-tmp');
 fs.mkdirSync(tmpDir, { recursive: true });
 
 fs.copyFileSync(
@@ -75,9 +75,29 @@ execSync('npm install --omit=dev', {
 copyDir(path.join(tmpDir, 'node_modules'), targetNodeModules);
 copyDir(path.join(tmpDir, 'node_modules'), extraNodeModules);
 
-fs.rmSync(tmpDir, { recursive: true, force: true });
+safeRmSync(tmpDir, '.deps-tmp (cleanup)');
 
 console.log('\n=== Artifacts ready ===');
+
+function safeRmSync(dir, label, maxRetries = 10) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      if (err.code === 'EBUSY' || err.code === 'EPERM') {
+        if (i < maxRetries - 1) {
+          console.warn(`  ⚠️  ${label || dir} locked (${i + 1}/${maxRetries}), waiting 3s...`);
+          execSync('sleep 3', { shell, stdio: 'ignore' });
+        } else {
+          console.warn(`  ⚠️  ${label || dir} could not be deleted after ${maxRetries} retries, continuing...`);
+        }
+      } else {
+        throw err;
+      }
+    }
+  }
+}
 
 function copyDir(src, dst) {
   if (!fs.existsSync(src)) {
