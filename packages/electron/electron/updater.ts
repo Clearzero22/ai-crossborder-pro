@@ -1,15 +1,36 @@
 import { autoUpdater } from 'electron-updater';
-import { BrowserWindow } from 'electron';
-import ElectronStore from 'electron-store';
-
-const store = new ElectronStore<{ skippedVersion: string | null }>({
-  defaults: { skippedVersion: null },
-});
+import { BrowserWindow, app } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface UpdateInfo {
   version: string;
   releaseNotes: string;
   releaseDate: string;
+}
+
+const CONFIG_FILE = 'update-config.json';
+
+function getConfigPath(): string {
+  return path.join(app.getPath('userData'), CONFIG_FILE);
+}
+
+function loadConfig(): { skippedVersion: string | null } {
+  const configPath = getConfigPath();
+  try {
+    if (fs.existsSync(configPath)) {
+      const raw = fs.readFileSync(configPath, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch {
+    // ignore parse errors, return defaults
+  }
+  return { skippedVersion: null };
+}
+
+function saveConfig(config: { skippedVersion: string | null }): void {
+  const configPath = getConfigPath();
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
 }
 
 export function initAutoUpdater(mainWindow: BrowserWindow): void {
@@ -25,8 +46,8 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
       releaseDate: info.releaseDate ?? new Date().toISOString(),
     };
 
-    const skipped = store.get('skippedVersion');
-    if (skipped === updateInfo.version) {
+    const config = loadConfig();
+    if (config.skippedVersion === updateInfo.version) {
       console.log(`[AutoUpdate] Version ${updateInfo.version} is skipped by user`);
       return;
     }
@@ -49,5 +70,7 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
 }
 
 export function skipVersion(version: string): void {
-  store.set('skippedVersion', version);
+  const config = loadConfig();
+  config.skippedVersion = version;
+  saveConfig(config);
 }
