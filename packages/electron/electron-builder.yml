@@ -3,7 +3,7 @@ productName: AI CrossBorder Pro
 copyright: Copyright 2026 Clearzero2
 
 directories:
-  output: release4
+  output: release5
   buildResources: resources
 
 files:

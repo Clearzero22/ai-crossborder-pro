@@ -4,7 +4,7 @@
   "description": "Quick testing scripts for browser automation",
   "scripts": {
     "dev": "tsx src/api-server.ts",
-    "build": "tsc",
+    "build": "node scripts/build.mjs",
     "test:chatgpt": "tsx src/test-chatgpt.ts",
     "test:chatgpt:upload": "tsx src/test-chatgpt-upload.ts",
     "test:chatgpt:run": "tsx src/run-chatgpt.ts",
@@ -38,6 +38,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/pg": "^8.20.0",
+    "esbuild": "^0.28.0",
     "tsx": "^4.21.0"
   },
   "dependencies": {
