@@ -3,25 +3,31 @@ import path from 'path';
 import os from 'os';
 import { browserConfig } from './core/browser-config';
 
-// 获取用户数据目录（Electron 打包后使用 CHROME_DATA_DIR 环境变量）
-export function getUserDataDir(profileName?: string): string {
+export async function getUserDataDir(profileName?: string): Promise<string> {
+  // Priority 1: explicit parameter
+  if (profileName) {
+    const electronDataDir = process.env.CHROME_DATA_DIR;
+    if (electronDataDir) return path.join(electronDataDir, profileName);
+    return path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', profileName);
+  }
+
+  // Priority 2: active profile from DB
+  try {
+    const activeDir = await browserConfig.getActiveDataDir();
+    if (activeDir) return activeDir;
+  } catch { /* DB not available, fall through */ }
+
+  // Priority 3: CHROME_DATA_DIR env var (Electron production)
   const electronDataDir = process.env.CHROME_DATA_DIR;
-  if (electronDataDir) {
-    return path.join(electronDataDir, profileName || 'automation');
-  }
-  if (process.platform === 'darwin') {
-    // macOS: 使用项目本地持久化目录，避免与正在使用的Chrome冲突
-    const projectDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', profileName || 'automation');
-    return projectDataDir;
-  }
-  // Windows: 使用项目本地持久化目录
-  const userDataDir = path.join(os.homedir(), 'AppData', 'Roaming', 'node_plawright_test', profileName || 'chromium-profile');
-  return userDataDir;
+  if (electronDataDir) return path.join(electronDataDir, 'automation');
+
+  // Priority 4: platform default
+  return path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'automation');
 }
 
 // 使用Playwright持久化模式启动（参考main/index.ts实现）
 export async function launchPersistent(userDataDir?: string): Promise<BrowserContext> {
-  const dataDir = userDataDir || getUserDataDir();
+  const dataDir = userDataDir || await getUserDataDir();
 
   console.log(`📁 使用用户数据目录: ${dataDir}`);
 
@@ -65,7 +71,7 @@ export async function connectCDP(): Promise<Browser> {
  * 用于绕过 Google 等网站的自动化检测
  */
 export async function launchStealth(userDataDir?: string): Promise<BrowserContext> {
-  const dataDir = userDataDir || getUserDataDir('stealth');
+  const dataDir = userDataDir || await getUserDataDir('stealth');
 
   log('🚀 启动隐身模式浏览器', 'info');
 

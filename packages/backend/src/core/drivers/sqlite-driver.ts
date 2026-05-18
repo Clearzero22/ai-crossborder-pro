@@ -136,6 +136,13 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id         TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,
+  path       TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `;
 
 // JSON columns that SQLite stores as TEXT but should be returned as parsed objects

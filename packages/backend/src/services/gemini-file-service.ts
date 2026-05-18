@@ -8,8 +8,7 @@
 import { chromium, type BrowserContext } from 'playwright';
 import { browserConfig } from '../core/browser-config';
 import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { getUserDataDir } from '../utils';
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -40,7 +39,7 @@ export class GeminiFileService {
   private context: BrowserContext | null = null;
 
   private async launchBrowser(headless = false): Promise<BrowserContext> {
-    const sharedProfileDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
+    const sharedProfileDir = await getUserDataDir();
 
     this.context = await chromium.launchPersistentContext(sharedProfileDir, {
       ...await browserConfig.getLaunchOptions(),

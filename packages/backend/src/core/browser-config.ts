@@ -11,6 +11,13 @@ export interface BrowserSettings {
   playwrightPath: string;
 }
 
+export interface Profile {
+  id: string;
+  name: string;
+  path: string;
+  created_at: string;
+}
+
 export interface LaunchOptions {
   channel?: 'chrome';
   executablePath?: string;
@@ -20,6 +27,7 @@ export interface LaunchOptions {
 interface DbAccess {
   getSetting(key: string): Promise<string | null>;
   setSetting(key: string, value: string): Promise<void>;
+  query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }>;
 }
 
 // Playwright Chromium 下载配置（与 playwright-core 1.59.1 对齐）
@@ -186,6 +194,116 @@ class BrowserConfigSingleton {
     } catch { /* ignore */ }
 
     return null;
+  }
+
+  async getProfiles(): Promise<Profile[]> {
+    if (!this.db) return [];
+    try {
+      const result = await this.db.query('SELECT id, name, path, created_at FROM profiles ORDER BY created_at');
+      return result.rows.map(r => ({
+        id: r.id as string,
+        name: r.name as string,
+        path: r.path as string,
+        created_at: r.created_at as string,
+      }));
+    } catch (err) {
+      console.warn('[BrowserConfig] Failed to load profiles:', err);
+      return [];
+    }
+  }
+
+  async createProfile(name: string, dirPath: string): Promise<Profile> {
+    if (!name.trim()) throw new Error('Profile name is required');
+    if (!dirPath.trim()) throw new Error('Profile path is required');
+
+    const validatedPath = path.resolve(dirPath.trim());
+    fs.mkdirSync(validatedPath, { recursive: true });
+
+    const id = `profile-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    if (!this.db) throw new Error('Database not available');
+
+    await this.db.query(
+      'INSERT INTO profiles (id, name, path) VALUES ($1, $2, $3)',
+      [id, name.trim(), validatedPath],
+    );
+
+    return { id, name: name.trim(), path: validatedPath, created_at: new Date().toISOString() };
+  }
+
+  async updateProfile(id: string, patch: { name?: string; path?: string }): Promise<void> {
+    if (!this.db) throw new Error('Database not available');
+
+    if (patch.name !== undefined && !patch.name.trim()) {
+      throw new Error('Profile name is required');
+    }
+
+    if (patch.path !== undefined) {
+      if (!patch.path.trim()) throw new Error('Profile path is required');
+      const validatedPath = path.resolve(patch.path.trim());
+      fs.mkdirSync(validatedPath, { recursive: true });
+      await this.db.query(
+        "UPDATE profiles SET path = $1 WHERE id = $2",
+        [validatedPath, id],
+      );
+    }
+
+    if (patch.name !== undefined) {
+      await this.db.query(
+        "UPDATE profiles SET name = $1 WHERE id = $2",
+        [patch.name.trim(), id],
+      );
+    }
+  }
+
+  async deleteProfile(id: string): Promise<void> {
+    if (!this.db) throw new Error('Database not available');
+
+    const activeId = await this.db.getSetting('active_profile_id');
+    if (activeId === id) {
+      throw new Error('Cannot delete the active profile');
+    }
+
+    await this.db.query('DELETE FROM profiles WHERE id = $1', [id]);
+  }
+
+  async setActiveProfile(id: string): Promise<void> {
+    if (!this.db) throw new Error('Database not available');
+
+    const result = await this.db.query('SELECT id FROM profiles WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      throw new Error('Profile not found');
+    }
+
+    await this.db.setSetting('active_profile_id', id);
+  }
+
+  async getActiveProfile(): Promise<Profile | null> {
+    if (!this.db) return null;
+    try {
+      const activeId = await this.db.getSetting('active_profile_id');
+      if (!activeId) return null;
+
+      const result = await this.db.query(
+        'SELECT id, name, path, created_at FROM profiles WHERE id = $1',
+        [activeId],
+      );
+      if (result.rows.length === 0) return null;
+
+      const row = result.rows[0];
+      return {
+        id: row.id as string,
+        name: row.name as string,
+        path: row.path as string,
+        created_at: row.created_at as string,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async getActiveDataDir(): Promise<string | null> {
+    const profile = await this.getActiveProfile();
+    return profile ? profile.path : null;
   }
 
   invalidateCache(): void {

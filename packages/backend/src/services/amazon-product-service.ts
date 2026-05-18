@@ -7,8 +7,7 @@
 
 import { chromium, type BrowserContext } from 'playwright';
 import { browserConfig } from '../core/browser-config';
-import * as os from 'os';
-import * as path from 'path';
+import { getUserDataDir } from '../utils';
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -77,9 +76,8 @@ export class AmazonProductService {
     if (!url) throw new Error('必须提供 asin 或 url');
 
     // Launch browser
-    const userDataDir = path.join(os.tmpdir(), 'amazon-product-profile');
     // ⚠️ 重要：统一使用共享的浏览器数据目录
-    const sharedUserDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
+    const sharedUserDataDir = await getUserDataDir();
     this.context = await chromium.launchPersistentContext(sharedUserDataDir, {
       ...await browserConfig.getLaunchOptions(),
       headless,

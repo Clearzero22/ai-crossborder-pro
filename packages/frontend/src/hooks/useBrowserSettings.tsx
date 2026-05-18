@@ -31,6 +31,13 @@ interface DownloadProgress {
   stage: string;
 }
 
+interface Profile {
+  id: string;
+  name: string;
+  path: string;
+  created_at: string;
+}
+
 interface BrowserContextValue {
   settings: BrowserSettings;
   chromeStatus: ChromeStatus;
@@ -47,6 +54,12 @@ interface BrowserContextValue {
   updateSettings: (patch: Partial<BrowserSettings>) => Promise<void>;
   testBrowser: () => Promise<void>;
   downloadPlaywright: (targetPath: string) => Promise<void>;
+  profiles: Profile[];
+  activeProfileId: string | null;
+  createProfile: (name: string, path: string) => Promise<void>;
+  updateProfile: (id: string, patch: { name?: string; path?: string }) => Promise<void>;
+  deleteProfile: (id: string) => Promise<void>;
+  setActiveProfile: (id: string) => Promise<void>;
 }
 
 const BrowserContext = createContext<BrowserContextValue | null>(null);
@@ -62,6 +75,8 @@ export function BrowserSettingsProvider({ children }: { children: ReactNode }) {
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [chromiumVersion, setChromiumVersion] = useState('');
   const abortRef = useRef<AbortController | null>(null);
 
@@ -182,16 +197,78 @@ export function BrowserSettingsProvider({ children }: { children: ReactNode }) {
     }
   }, [downloading, refresh]);
 
+  const fetchProfiles = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/settings/browser/profiles`);
+      if (res.ok) {
+        const data = await res.json();
+        setProfiles(data.profiles);
+        setActiveProfileId(data.activeProfileId);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const createProfile = useCallback(async (name: string, dirPath: string) => {
+    const res = await fetch(`${API_BASE}/settings/browser/profiles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, path: dirPath }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    await fetchProfiles();
+  }, [fetchProfiles]);
+
+  const updateProfile = useCallback(async (id: string, patch: { name?: string; path?: string }) => {
+    const res = await fetch(`${API_BASE}/settings/browser/profiles/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    await fetchProfiles();
+  }, [fetchProfiles]);
+
+  const deleteProfile = useCallback(async (id: string) => {
+    const res = await fetch(`${API_BASE}/settings/browser/profiles/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    await fetchProfiles();
+  }, [fetchProfiles]);
+
+  const setActiveProfile = useCallback(async (id: string) => {
+    const res = await fetch(`${API_BASE}/settings/browser/profiles/active`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    await fetchProfiles();
+  }, [fetchProfiles]);
+
   useEffect(() => {
     refresh();
+    fetchProfiles();
     return () => { abortRef.current?.abort(); };
-  }, [refresh]);
+  }, [refresh, fetchProfiles]);
 
   return (
     <BrowserContext.Provider value={{
       settings, chromeStatus, playwrightStatus, chromiumVersion, loading, error,
       testResult, testing, downloading, downloadProgress, downloadError,
       refresh, updateSettings, testBrowser, downloadPlaywright,
+      profiles, activeProfileId,
+      createProfile, updateProfile, deleteProfile, setActiveProfile,
     }}>
       {children}
     </BrowserContext.Provider>

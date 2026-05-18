@@ -7,11 +7,10 @@
 import { chromium, type Page } from 'playwright';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { homedir } from 'os';
 import { browserConfig } from '../core/browser-config';
+import { getUserDataDir } from '../utils';
 
-// 统一使用共享的浏览器数据目录
-const DATA_DIR = join(homedir(), '.node-plawright-test', 'chrome-profile', 'file-upload');
+// CSV output directory (for saving scraped data files, NOT browser data)
 const CSV_OUTPUT_DIR = process.env.DATA_DIR ? `${process.env.DATA_DIR}/output/keywords` : './output/keywords';
 
 interface ScrapedKeyword {
@@ -203,9 +202,10 @@ export async function scrapeXiyouzhaociKeywords(
   } = options;
 
   console.log(`[Xiyouzhaoci] Starting scrape for ASIN: ${asin}`);
-  console.log(`[Xiyouzhaoci] Using shared browser profile: ${DATA_DIR}`);
+  const profileDir = await getUserDataDir();
+  console.log(`[Xiyouzhaoci] Using browser profile: ${profileDir}`);
 
-  const context = await chromium.launchPersistentContext(DATA_DIR, {
+  const context = await chromium.launchPersistentContext(profileDir, {
     ...await browserConfig.getLaunchOptions(),
     headless,
     viewport: { width: 1280, height: 720 },

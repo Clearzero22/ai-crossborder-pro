@@ -16,6 +16,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as http from 'http';
 import { spawn } from 'child_process';
+import { getUserDataDir } from '../utils';
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -81,7 +82,7 @@ export class ChatGPTFileService {
       // 没有运行中的 Chrome 调试实例，自动启动
       console.log('[ChatGPT] 未检测到 Chrome 调试实例，正在启动...');
       const platform = os.platform();
-      const sharedProfileDir = this.getProfileDir();
+      const sharedProfileDir = await this.getProfileDir();
       const chromePath = this.getChromePath(platform);
 
       const args = [
@@ -319,8 +320,8 @@ export class ChatGPTFileService {
     }
   }
 
-  private getProfileDir(): string {
-    return path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'automation');
+  private async getProfileDir(): Promise<string> {
+    return await getUserDataDir();
   }
 
   private sleep(ms: number): Promise<void> {

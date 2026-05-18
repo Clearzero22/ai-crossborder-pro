@@ -6,9 +6,41 @@ export default function BrowserConfigSection() {
     settings, chromeStatus, playwrightStatus, chromiumVersion, loading, error,
     testResult, testing, downloading, downloadProgress, downloadError,
     updateSettings, testBrowser, downloadPlaywright,
+    profiles, activeProfileId,
+    createProfile, deleteProfile, setActiveProfile,
   } = useBrowserSettings();
 
   const [customPath, setCustomPath] = useState('');
+  const [showNewProfile, setShowNewProfile] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('');
+  const [newProfilePath, setNewProfilePath] = useState('');
+  const [profileError, setProfileError] = useState('');
+
+  const activeProfile = profiles.find(p => p.id === activeProfileId) || null;
+
+  const handleCreateProfile = async () => {
+    setProfileError('');
+    if (!newProfileName.trim() || !newProfilePath.trim()) {
+      setProfileError('请填写档案名称和路径');
+      return;
+    }
+    try {
+      await createProfile(newProfileName.trim(), newProfilePath.trim());
+      setNewProfileName('');
+      setNewProfilePath('');
+      setShowNewProfile(false);
+    } catch (err) {
+      setProfileError(String(err));
+    }
+  };
+
+  const handleDeleteProfile = async (id: string) => {
+    try {
+      await deleteProfile(id);
+    } catch (err) {
+      setProfileError(String(err));
+    }
+  };
 
   if (loading) {
     return (
@@ -35,6 +67,93 @@ export default function BrowserConfigSection() {
         <h2 className="font-semibold text-gray-900">浏览器配置</h2>
       </div>
       <div className="divide-y divide-gray-50">
+        {/* Profile Management */}
+        <div className="px-5 py-3.5">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <div className="text-sm font-medium text-gray-900">数据档案</div>
+              <div className="text-xs text-gray-500 mt-0.5">选择浏览器数据目录，保存登录状态和 cookies</div>
+            </div>
+            <button
+              onClick={() => setShowNewProfile(!showNewProfile)}
+              className="px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+            >
+              {showNewProfile ? '取消' : '+ 新建'}
+            </button>
+          </div>
+
+          {/* Profile selector */}
+          <div className="flex items-center gap-2">
+            <select
+              value={activeProfileId || ''}
+              onChange={(e) => {
+                if (e.target.value) setActiveProfile(e.target.value);
+              }}
+              className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">默认路径</option>
+              {profiles.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            {activeProfile && (
+              <button
+                onClick={() => handleDeleteProfile(activeProfile.id)}
+                className="px-2 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                title="删除档案"
+              >
+                删除
+              </button>
+            )}
+          </div>
+
+          {/* Active profile info */}
+          {activeProfile && (
+            <div className="mt-2 px-3 py-2 bg-gray-50 rounded-lg">
+              <div className="text-xs text-gray-500">
+                路径: <span className="text-gray-700 font-mono">{activeProfile.path}</span>
+              </div>
+            </div>
+          )}
+
+          {/* New profile form */}
+          {showNewProfile && (
+            <div className="mt-3 space-y-2 p-3 border border-gray-200 rounded-lg bg-white">
+              <input
+                type="text"
+                value={newProfileName}
+                onChange={(e) => setNewProfileName(e.target.value)}
+                placeholder="档案名称（如：店铺 A）"
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                value={newProfilePath}
+                onChange={(e) => setNewProfilePath(e.target.value)}
+                placeholder="数据目录路径（如：C:\Users\xxx\chrome-profiles\store-a）"
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {profileError && (
+                <div className="text-xs text-red-500">{profileError}</div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCreateProfile}
+                  className="px-3 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  创建
+                </button>
+                <button
+                  onClick={() => { setShowNewProfile(false); setProfileError(''); }}
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Browser Mode Selection */}
         <div className="px-5 py-3.5">
           <div className="text-sm font-medium text-gray-900 mb-2">浏览器模式</div>

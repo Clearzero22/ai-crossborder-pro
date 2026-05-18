@@ -1133,6 +1133,85 @@ app.post('/api/settings/browser/download', async (c) => {
   });
 });
 
+// ─── 浏览器档案 API ────────────────────────────────────────────
+
+async function withBrowserDb<T>(fn: (db: DatabaseService) => Promise<T>): Promise<T> {
+  const db = createDb();
+  if (!db) throw new Error('Database not available');
+  await db.connect();
+  browserConfig.setDb(db);
+  try {
+    return await fn(db);
+  } finally {
+    await db.disconnect();
+  }
+}
+
+app.get('/api/settings/browser/profiles', async (c) => {
+  try {
+    return await withBrowserDb(async () => {
+      const profiles = await browserConfig.getProfiles();
+      const activeProfile = await browserConfig.getActiveProfile();
+      return c.json({ profiles, activeProfileId: activeProfile?.id || null });
+    });
+  } catch (err) {
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+app.post('/api/settings/browser/profiles', async (c) => {
+  try {
+    return await withBrowserDb(async () => {
+      const { name, path: dirPath } = await c.req.json();
+      if (!name || !dirPath) {
+        return c.json({ error: 'name and path are required' }, 400);
+      }
+      const profile = await browserConfig.createProfile(name, dirPath);
+      return c.json({ profile });
+    });
+  } catch (err) {
+    return c.json({ error: String(err) }, 400);
+  }
+});
+
+app.put('/api/settings/browser/profiles/active', async (c) => {
+  try {
+    return await withBrowserDb(async () => {
+      const { id } = await c.req.json();
+      if (!id) return c.json({ error: 'id is required' }, 400);
+      await browserConfig.setActiveProfile(id);
+      return c.json({ success: true });
+    });
+  } catch (err) {
+    return c.json({ error: String(err) }, 400);
+  }
+});
+
+app.put('/api/settings/browser/profiles/:id', async (c) => {
+  try {
+    return await withBrowserDb(async () => {
+      const id = c.req.param('id');
+      const body = await c.req.json();
+      await browserConfig.updateProfile(id, { name: body.name, path: body.path });
+      return c.json({ success: true });
+    });
+  } catch (err) {
+    return c.json({ error: String(err) }, 400);
+  }
+});
+
+app.delete('/api/settings/browser/profiles/:id', async (c) => {
+  try {
+    return await withBrowserDb(async () => {
+      const id = c.req.param('id');
+      await browserConfig.deleteProfile(id);
+      return c.json({ success: true });
+    });
+  } catch (err) {
+    return c.json({ error: String(err) }, 400);
+  }
+});
+
 // ─── 全局错误处理 ────────────────────────────────────────────
 
 // ─── 静态文件服务（Electron 生产模式） ─────────────────────────

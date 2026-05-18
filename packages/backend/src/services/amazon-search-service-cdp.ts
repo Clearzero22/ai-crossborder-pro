@@ -9,6 +9,7 @@ import { launch } from 'chrome-launcher';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
+import { getUserDataDir } from '../utils';
 
 interface SearchResult {
   keyword: string;
@@ -62,7 +63,7 @@ export class AmazonSearchService {
   }
 
   private async launchChrome(options: ChromeLauncherOptions = {}): Promise<{ client: CDP.Client; launcher: any }> {
-    const userDataDir = options.userDataDir || path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'automation');
+    const userDataDir = options.userDataDir || await getUserDataDir();
 
     const flags = [
       '--no-first-run',

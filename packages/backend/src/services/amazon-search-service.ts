@@ -6,8 +6,7 @@
 
 import { chromium, type BrowserContext } from 'playwright';
 import { browserConfig } from '../core/browser-config';
-import * as os from 'os';
-import * as path from 'path';
+import { getUserDataDir } from '../utils';
 
 interface SearchResult {
   keyword: string;
@@ -21,7 +20,7 @@ export class AmazonSearchService {
 
   async search(keyword: string, maxResults = 20, options: { headless?: boolean } = {}): Promise<SearchResult> {
     // ⚠️ 重要：统一使用共享的浏览器数据目录
-    const userDataDir = path.join(os.homedir(), '.node-plawright-test', 'chrome-profile', 'automation');
+    const userDataDir = await getUserDataDir();
 
     if (!this.context) {
       console.log(`[Playwright] Launching browser (headless: ${options.headless !== false ? 'true' : 'false'})...`);
