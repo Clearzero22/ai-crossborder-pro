@@ -4,6 +4,18 @@ import * as os from 'os';
 import * as fs from 'fs';
 import { startBackend, stopBackend, waitForReady } from './backend-launcher';
 
+// API key names to forward from .env to the backend process
+const API_KEY_ENV_VARS = [
+  'DASHSCOPE_API_KEY',
+  'DASHSCOPE_BASE_URL',
+  'OPENAI_API_KEY',
+  'OPENAI_BASE_URL',
+  'CLAUDE_API_KEY',
+  'CLAUDE_BASE_URL',
+  'GEMINI_API_KEY',
+  'GEMINI_BASE_URL',
+];
+
 let mainWindow: BrowserWindow | null = null;
 
 const isDev = !app.isPackaged;
@@ -17,6 +29,24 @@ function resolvePath(...segments: string[]): string {
 
 function getChromeDataDir(): string {
   return path.join(app.getPath('userData'), 'chrome-profile');
+}
+
+function loadEnvVarsFromFile(envPath: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!fs.existsSync(envPath)) return result;
+  const content = fs.readFileSync(envPath, 'utf-8');
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const value = trimmed.slice(eqIndex + 1).trim();
+    if (API_KEY_ENV_VARS.includes(key) && value) {
+      result[key] = value;
+    }
+  }
+  return result;
 }
 
 function createWindow(): void {
@@ -75,6 +105,8 @@ async function onReady(): Promise<void> {
 
   const dataDir = getChromeDataDir(); // same userData base, used for output/runs etc.
 
+  const envFromFile = loadEnvVarsFromFile(path.join(backendDistDir, '.env'));
+
   startBackend(backendDistDir, {
     PORT: String(port),
     CHROME_DATA_DIR: chromeDataDir,
@@ -82,6 +114,7 @@ async function onReady(): Promise<void> {
     FRONTEND_DIR: frontendDistDir,
     NODE_PATH: nodeModulesDir,
     NODE_ENV: 'production',
+    ...envFromFile,
   });
 
   try {

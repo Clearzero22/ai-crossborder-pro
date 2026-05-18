@@ -11,6 +11,7 @@ export function startBackend(
   const entryPath = path.join(backendDistDir, 'api-server.js');
 
   backendProcess = fork(entryPath, [], {
+    cwd: backendDistDir,
     env: { ...process.env, ...env },
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
     silent: false,

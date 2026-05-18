@@ -29,10 +29,16 @@ fs.rmSync(frontendDistDir, { recursive: true, force: true });
 copyDir(path.join(frontendDir, 'dist'), frontendDistDir);
 console.log(`  Done: ${frontendDistDir}`);
 
-// 2. Copy backend dist
+// 2. Copy backend dist + .env
 console.log('\n[2/3] Copying backend dist...');
 fs.rmSync(backendDistDir, { recursive: true, force: true });
 copyDir(path.join(backendDir, 'dist'), backendDistDir);
+// Copy .env so dotenv/config can load API keys in production
+const envFile = path.join(backendDir, '.env');
+if (fs.existsSync(envFile)) {
+  fs.copyFileSync(envFile, path.join(backendDistDir, '.env'));
+  console.log('  Copied .env to backend-dist');
+}
 console.log(`  Done: ${backendDistDir}`);
 console.log(`  Files: ${fs.readdirSync(backendDistDir).join(', ')}`);
 
