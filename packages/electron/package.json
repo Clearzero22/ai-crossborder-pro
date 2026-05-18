@@ -13,9 +13,11 @@
     "build": "npm run build:electron && node scripts/build.mjs"
   },
   "dependencies": {
-    "electron-is-dev": "^2.0.0",
     "@ai-crossborder/backend": "*",
-    "@ai-crossborder/frontend": "*"
+    "@ai-crossborder/frontend": "*",
+    "electron-is-dev": "^2.0.0",
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.3"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
