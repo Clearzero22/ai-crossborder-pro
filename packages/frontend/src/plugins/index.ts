@@ -898,6 +898,10 @@ export const gigab2bCrawlPlugin: NodePlugin = {
       }
 
       const data = await resp.json();
+      if (!data.success) {
+        ctx.logger('error', `抓取失败: ${data.error || '未知错误'}`);
+        throw new Error(data.error || '抓取失败');
+      }
       ctx.logger('success', `抓取完成: ${data.product?.title || '未知'}`);
 
       // 过滤 banner 设计图，只保留商品主图
@@ -1037,6 +1041,10 @@ export const amazonSearchPlugin: NodePlugin = {
       }
 
       const data = await resp.json();
+      if (!data.success) {
+        ctx.logger('error', `搜索失败: ${data.error || '未知错误'}`);
+        throw new Error(data.error || '搜索失败');
+      }
       ctx.logger('success', `找到 ${data.total} 个竞品`);
 
       return {
@@ -1142,6 +1150,10 @@ export const amazonProductPlugin: NodePlugin = {
       }
 
       const data = await resp.json();
+      if (!data.success) {
+        ctx.logger('error', `抓取失败: ${data.error || '未知错误'}`);
+        throw new Error(data.error || '抓取失败');
+      }
       const product = data.product;
       ctx.logger('success', `抓取完成: ${product?.title?.slice(0, 50) || '未知'}`);
 
