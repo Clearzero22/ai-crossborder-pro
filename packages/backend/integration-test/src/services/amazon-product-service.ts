@@ -88,7 +88,7 @@ export class AmazonProductService {
     const page = this.context.pages()[0] || await this.context.newPage();
 
     // Navigate
-    await page.goto(url, { timeout: 30000, waitUntil: 'domcontentloaded' });
+    await page.goto(url, { timeout: 60000, waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
 
     // Expand product details

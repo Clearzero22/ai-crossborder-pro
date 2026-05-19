@@ -74,7 +74,7 @@ async function main() {
       const t = Date.now();
       ctx.step1 = await runStep1(options);
       stepSuccess(1, 'GigaB2B Crawl', Date.now() - t);
-      dataSnapshot('Step 1 output', { title: ctx.step1.title, images: ctx.step1.images.length, source: ctx.step1.source });
+      dataSnapshot('Step 1 → output', ctx.step1);
       passed++;
     } catch (err) {
       stepError(1, 'GigaB2B Crawl', err);
@@ -88,11 +88,12 @@ async function main() {
   // ─── Step 2: AI Vision ────────────────────────────────────
   if (ctx.step1 && options.skipTo <= 2) {
     stepStart(2, 'AI Vision');
+    dataSnapshot('Step 1 → Step 2 input', { title: ctx.step1.title, images: ctx.step1.images });
     try {
       const t = Date.now();
       ctx.step2 = await runStep2(ctx.step1, options);
       stepSuccess(2, 'AI Vision', Date.now() - t);
-      dataSnapshot('Step 2 output', { analyses: ctx.step2.analyses.length, keywords: ctx.step2.searchKeywords?.length || 0, template: ctx.step2.templateUsed });
+      dataSnapshot('Step 2 → output', { analyses: ctx.step2.analyses, searchKeywords: ctx.step2.searchKeywords });
       passed++;
     } catch (err) {
       stepError(2, 'AI Vision', err);
@@ -106,11 +107,12 @@ async function main() {
   // ─── Step 3: Amazon Search ────────────────────────────────
   if (ctx.step1 && ctx.step2 && options.skipTo <= 3) {
     stepStart(3, 'Amazon Search');
+    dataSnapshot('Step 2 → Step 3 input', { searchKeywords: ctx.step2.searchKeywords, fallbackTitle: ctx.step1.title });
     try {
       const t = Date.now();
       ctx.step3 = await runStep3(ctx.step1, ctx.step2, options);
       stepSuccess(3, 'Amazon Search', Date.now() - t);
-      dataSnapshot('Step 3 output', { keyword: ctx.step3.keyword, asins: ctx.step3.asins.length, total: ctx.step3.total });
+      dataSnapshot('Step 3 → output', ctx.step3);
       passed++;
     } catch (err) {
       stepError(3, 'Amazon Search', err);
@@ -124,11 +126,12 @@ async function main() {
   // ─── Step 4: Amazon Product ───────────────────────────────
   if (ctx.step3 && options.skipTo <= 4) {
     stepStart(4, 'Amazon Product');
+    dataSnapshot('Step 3 → Step 4 input', { asins: ctx.step3.asins });
     try {
       const t = Date.now();
       ctx.step4 = await runStep4(ctx.step3, options);
       stepSuccess(4, 'Amazon Product', Date.now() - t);
-      dataSnapshot('Step 4 output', { asin: ctx.step4.asin, title: ctx.step4.title?.slice(0, 60), brand: ctx.step4.brand });
+      dataSnapshot('Step 4 → output', { asin: ctx.step4.asin, title: ctx.step4.title, brand: ctx.step4.brand, price: ctx.step4.price, rating: ctx.step4.rating, bulletPoints: ctx.step4.bulletPoints?.length || 0 });
       passed++;
     } catch (err) {
       stepError(4, 'Amazon Product', err);
@@ -142,11 +145,12 @@ async function main() {
   // ─── Step 5: Xiyouzhaoci ──────────────────────────────────
   if (ctx.step4 && options.skipTo <= 5) {
     stepStart(5, 'Xiyouzhaoci');
+    dataSnapshot('Step 4 → Step 5 input', { asin: ctx.step4.asin });
     try {
       const t = Date.now();
       ctx.step5 = await runStep5(ctx.step4, options);
       stepSuccess(5, 'Xiyouzhaoci', Date.now() - t);
-      dataSnapshot('Step 5 output', { asin: ctx.step5.asin, totalKeywords: ctx.step5.totalKeywords });
+      dataSnapshot('Step 5 → output', { asin: ctx.step5.asin, totalKeywords: ctx.step5.totalKeywords, keywords: ctx.step5.keywords });
       passed++;
     } catch (err) {
       stepError(5, 'Xiyouzhaoci', err);
@@ -160,11 +164,12 @@ async function main() {
   // ─── Step 6: AI Optimize ──────────────────────────────────
   if (ctx.step1 && ctx.step4 && ctx.step5 && options.skipTo <= 6) {
     stepStart(6, 'AI Optimize');
+    dataSnapshot('Step 1+4+5 → Step 6 input', { title: ctx.step1.title, step4Title: ctx.step4.title, keywordsCount: ctx.step5.keywords.length });
     try {
       const t = Date.now();
       ctx.step6 = await runStep6(ctx.step1, ctx.step4, ctx.step5, options);
       stepSuccess(6, 'AI Optimize', Date.now() - t);
-      dataSnapshot('Step 6 output', { optimizedTitle: ctx.step6.optimizedTitle?.slice(0, 80), seoKeywords: ctx.step6.seoKeywords.length });
+      dataSnapshot('Step 6 → output', { optimizedTitle: ctx.step6.optimizedTitle, optimizedBulletPoints: ctx.step6.optimizedBulletPoints, seoKeywords: ctx.step6.seoKeywords, competitorAnalysis: ctx.step6.competitorAnalysis });
       passed++;
     } catch (err) {
       stepError(6, 'AI Optimize', err);
