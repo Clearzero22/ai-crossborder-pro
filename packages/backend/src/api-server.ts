@@ -35,6 +35,7 @@ import * as xiyouzhaociService from './services/xiyouzhaociService';
 import { GeminiFileService } from './services/gemini-file-service';
 import { ChatGPTFileService } from './services/chatgpt-file-service';
 import { browserConfig } from './core/browser-config';
+import { pipelineDataRoutes } from './routes/pipeline-data-routes';
 
 // ─── 配置 ────────────────────────────────────────────────────
 
@@ -1015,6 +1016,9 @@ app.get('/api/workflow/stats', async (c) => {
     await db.disconnect();
   }
 });
+
+// ─── Pipeline 数据 API ─────────────────────────────────────────
+app.route('/api/pipeline', pipelineDataRoutes);
 
 // ─── 浏览器配置 API ───────────────────────────────────────────
 
