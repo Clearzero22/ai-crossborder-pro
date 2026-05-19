@@ -3,7 +3,7 @@ productName: AI CrossBorder Pro
 copyright: Copyright 2026 Clearzero2
 
 directories:
-  output: release11
+  output: release12
   buildResources: resources
 
 # Only include Electron main process in ASAR
