@@ -23,6 +23,7 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { chromium as _chromium } from 'playwright-core';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -1065,9 +1066,8 @@ app.put('/api/settings/browser', async (c) => {
 
 app.post('/api/settings/browser/test', async (c) => {
   try {
-    const { chromium } = await import('playwright-core');
     const launchOpts = await browserConfig.getLaunchOptions();
-    const browser = await chromium.launch({
+    const browser = await _chromium.launch({
       ...launchOpts,
       headless: true,
       args: ['--no-sandbox'],

@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendDir = path.resolve(__dirname, '..');
 
 const EXTERNALS = [
+  'playwright-core',
   'better-sqlite3',
   'pg',
   'chrome-launcher',
