@@ -10,6 +10,11 @@ release3/
 release4/
 release5/
 release6/
+release7/
+release8/
+**/data/*.db
+**/data/*.db-wal
+**/data/*.db-shm
 *.dmg
 *.exe
 *.AppImage

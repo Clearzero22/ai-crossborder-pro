@@ -24,32 +24,20 @@ console.log(`  Frontend:  ${frontendDir}`);
 console.log(`  Backend:   ${backendDir}`);
 
 // 1. Copy frontend dist
-console.log('\n[1/3] Copying frontend dist...');
+console.log('\n[1/4] Copying frontend dist...');
 safeRmSync(frontendDistDir, 'frontend-dist');
 copyDir(path.join(frontendDir, 'dist'), frontendDistDir);
 console.log(`  Done: ${frontendDistDir}`);
 
-// 2. Copy backend dist + .env
-console.log('\n[2/3] Copying backend dist...');
+// 2. Copy backend dist (NO .env — users configure API keys in app)
+console.log('\n[2/4] Copying backend dist...');
 safeRmSync(backendDistDir, 'backend-dist');
 copyDir(path.join(backendDir, 'dist'), backendDistDir);
-// Copy .env so dotenv/config can load API keys in production
-const envFile = path.join(backendDir, '.env');
-if (fs.existsSync(envFile)) {
-  fs.copyFileSync(envFile, path.join(backendDistDir, '.env'));
-  console.log('  Copied .env to backend-dist');
-}
 console.log(`  Done: ${backendDistDir}`);
 console.log(`  Files: ${fs.readdirSync(backendDistDir).join(', ')}`);
 
 // 3. Install backend production dependencies
-//    npm workspaces hoists shared deps to root node_modules.
-//    A clean `npm install --omit=dev` in a temp dir resolves all deps
-//    (including hoisted and transitive) with deterministic versions from lockfile.
-console.log('\n[3/3] Installing backend production dependencies...');
-const targetNodeModules = path.join(backendDistDir, 'node_modules');
-
-safeRmSync(targetNodeModules, 'backend-dist/node_modules');
+console.log('\n[3/4] Installing backend production dependencies...');
 safeRmSync(extraNodeModules, 'backend_dist_node_modules');
 
 const tmpDir = path.join(electronDir, '.deps-tmp');
@@ -65,14 +53,50 @@ fs.copyFileSync(
   path.join(tmpDir, 'package-lock.json'),
 );
 
+// Backend runs via bundled node.exe (not Electron's Node), so native modules
+// are compiled for standard Node.js ABI — no electron-rebuild needed.
 execSync('npm install --omit=dev', {
   cwd: tmpDir,
   stdio: 'inherit',
   shell,
-  env: { ...process.env, PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1' },
+  env: {
+    ...process.env,
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1',
+  },
 });
 
-copyDir(path.join(tmpDir, 'node_modules'), targetNodeModules);
+// 4. Copy node.exe for backend runtime
+console.log('\n[4/4] Bundling Node.js runtime for backend...');
+const nodeRuntimeDir = path.join(electronDir, 'node-runtime');
+safeRmSync(nodeRuntimeDir, 'node-runtime');
+fs.mkdirSync(nodeRuntimeDir, { recursive: true });
+const nodeExeSrc = process.execPath;
+const nodeExeDst = path.join(nodeRuntimeDir, 'node.exe');
+fs.copyFileSync(nodeExeSrc, nodeExeDst);
+console.log(`  Copied: ${nodeExeSrc} -> ${nodeExeDst}`);
+
+// Verify native modules
+console.log('  Verifying native module prebuilds...');
+const betterSqlite3Dir = path.join(tmpDir, 'node_modules', 'better-sqlite3');
+if (fs.existsSync(betterSqlite3Dir)) {
+  const buildDir = path.join(betterSqlite3Dir, 'build', 'Release');
+  if (fs.existsSync(path.join(buildDir, 'better_sqlite3.node'))) {
+    console.log('  better-sqlite3: prebuild found');
+  } else {
+    console.warn('  WARNING: better-sqlite3 prebuild not found');
+  }
+}
+
+// Validate critical dependencies
+const criticalDeps = ['better-sqlite3', 'playwright', 'playwright-core', 'hono'];
+for (const dep of criticalDeps) {
+  if (!fs.existsSync(path.join(tmpDir, 'node_modules', dep))) {
+    throw new Error(`Critical dependency missing: ${dep}`);
+  }
+}
+console.log(`  All critical dependencies present`);
+
+// Only copy node_modules to extraResources location (single copy)
 copyDir(path.join(tmpDir, 'node_modules'), extraNodeModules);
 
 safeRmSync(tmpDir, '.deps-tmp (cleanup)');
@@ -88,7 +112,7 @@ function safeRmSync(dir, label, maxRetries = 10) {
       if (err.code === 'EBUSY' || err.code === 'EPERM') {
         if (i < maxRetries - 1) {
           console.warn(`  ⚠️  ${label || dir} locked (${i + 1}/${maxRetries}), waiting 3s...`);
-          execSync('sleep 3', { shell, stdio: 'ignore' });
+          execSync('powershell -NoProfile -Command "Start-Sleep -Seconds 3"', { stdio: 'ignore' });
         } else {
           console.warn(`  ⚠️  ${label || dir} could not be deleted after ${maxRetries} retries, continuing...`);
         }
