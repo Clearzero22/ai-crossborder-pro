@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const releaseDir = path.join(__dirname, '..', 'packages', 'electron', 'release9');
+const releaseDir = path.join(__dirname, '..', 'packages', 'electron', 'release10');
 
 if (!fs.existsSync(releaseDir)) {
   console.log('[pre-build] release6/ does not exist, nothing to clean.');
