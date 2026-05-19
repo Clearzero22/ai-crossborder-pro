@@ -15,11 +15,11 @@ interface SidebarProps {
 
 export default function Sidebar({ navItems, activeNavId, collapsed, onToggle, onNavSelect, onUpgrade, onMobileClose }: SidebarProps) {
   return (
-    <aside className={`bg-white border-r border-gray-200 flex flex-col flex-shrink-0 transition-all duration-200 h-full w-56 lg:${
+    <aside className={`bg-white border-r border-gray-200 flex flex-col flex-shrink-0 transition-all duration-200 h-full ${
       collapsed ? 'w-16' : 'w-56'
     }`}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <Logo collapsed={false} />
+      <div className={`flex items-center justify-between border-b border-gray-100 ${collapsed ? 'px-2 py-3' : 'px-4 py-3'}`}>
+        <Logo collapsed={collapsed} />
         {/* Mobile close button */}
         <button
           onClick={onMobileClose}
