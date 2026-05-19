@@ -1,4 +1,4 @@
-import { Page } from 'playwright';
+import { Page, chromium } from 'playwright-core';
 import { RunContext } from '../core/run-context';
 import { DatabaseService } from '../core/database-service';
 import { browserConfig } from '../core/browser-config';
@@ -62,7 +62,6 @@ export abstract class BaseCrawler<TStaging, TClean> {
     const run = await RunContext.create(options.source, options.params);
 
     try {
-      const { chromium } = await import('playwright');
       const launchExtras = await browserConfig.getLaunchOptions();
       const context = await chromium.launchPersistentContext(
         await getUserDataDir(),

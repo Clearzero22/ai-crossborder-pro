@@ -1,4 +1,4 @@
-import { chromium, Browser, BrowserContext, Page } from 'playwright';
+import { chromium, Browser, BrowserContext, Page } from 'playwright-core';
 import path from 'path';
 import os from 'os';
 import { browserConfig } from './core/browser-config';

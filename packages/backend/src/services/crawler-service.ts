@@ -15,6 +15,7 @@ import { GigaB2BCrawler } from '../crawlers/gigab2b/crawler';
 import { ProductRecord, CrawlerRun } from '../core/types';
 import { browserConfig } from '../core/browser-config';
 import { getUserDataDir } from '../utils';
+import { chromium } from 'playwright-core';
 
 /** 爬虫运行选项 */
 export interface RunOptions {
@@ -75,7 +76,6 @@ export class CrawlerService {
 
     try {
       // 2. 执行爬虫（使用统一的 Chrome profile，确保登录状态共享）
-      const { chromium } = await import('playwright');
       // ⚠️ 重要：统一使用共享的浏览器数据目录
       const sharedProfileDir = await getUserDataDir();
       const launchExtras = await browserConfig.getLaunchOptions();

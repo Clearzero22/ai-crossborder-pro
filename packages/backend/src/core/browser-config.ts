@@ -122,6 +122,10 @@ class BrowserConfigSingleton {
       console.warn(`[BrowserConfig] Playwright Chromium not found at ${config.playwrightPath}, falling back to system Chrome`);
     }
 
+    const chromeStatus = this.checkChromeExists();
+    if (chromeStatus.exists) {
+      return { executablePath: chromeStatus.path };
+    }
     return { channel: 'chrome' };
   }
 

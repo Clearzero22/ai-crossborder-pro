@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { startBackend, stopBackend, waitForReady } from './backend-launcher';
+import { startBackend, stopBackend, waitForReady, findAvailablePort } from './backend-launcher';
 import { initAutoUpdater, skipVersion, downloadUpdate, installUpdate, checkForUpdates } from './updater';
 
 // API key names to forward from .env to the backend process
@@ -95,7 +95,10 @@ async function onReady(): Promise<void> {
   const backendDistDir = resolvePath('backend-dist');
   const frontendDistDir = resolvePath('frontend-dist');
   const chromeDataDir = getChromeDataDir();
-  const port = 3456;
+
+  // Find available port (3456 may be in use)
+  const port = await findAvailablePort(3456);
+  console.log(`[Main] Using port: ${port}`);
 
   console.log(`[Main] resourcesPath: ${app.getAppPath()}`);
   console.log(`[Main] process.resourcesPath: ${process.resourcesPath}`);
@@ -106,10 +109,14 @@ async function onReady(): Promise<void> {
   console.log(`[Main] index.html exists: ${fs.existsSync(path.join(frontendDistDir, 'index.html'))}`);
 
   const nodeModulesDir = resolvePath('backend_node_modules');
+  const nodeRuntimePath = resolvePath('node-runtime', 'node.exe');
 
   const dataDir = getChromeDataDir(); // same userData base, used for output/runs etc.
 
-  const envFromFile = loadEnvVarsFromFile(path.join(backendDistDir, '.env'));
+  // Load API keys from user data directory (not bundled .env)
+  // Users configure their own API keys via the app settings
+  const userDataDir = app.getPath('userData');
+  const envFromFile = loadEnvVarsFromFile(path.join(userDataDir, '.env'));
 
   startBackend(backendDistDir, {
     PORT: String(port),
@@ -119,7 +126,7 @@ async function onReady(): Promise<void> {
     NODE_PATH: nodeModulesDir,
     NODE_ENV: 'production',
     ...envFromFile,
-  });
+  }, fs.existsSync(nodeRuntimePath) ? nodeRuntimePath : undefined);
 
   try {
     await waitForReady(port, 30000);
@@ -142,6 +149,17 @@ async function onReady(): Promise<void> {
 
 // ── IPC handlers ──
 ipcMain.handle('get-user-data-path', () => app.getPath('userData'));
+
+ipcMain.handle('get-env-status', () => {
+  const userDataDir = app.getPath('userData');
+  const envPath = path.join(userDataDir, '.env');
+  const envVars = loadEnvVarsFromFile(envPath);
+  return {
+    hasEnvFile: fs.existsSync(envPath),
+    configuredKeys: Object.keys(envVars),
+    dashscopeConfigured: !!envVars.DASHSCOPE_API_KEY,
+  };
+});
 
 ipcMain.handle('get-chrome-path', () => {
   const platform = os.platform();

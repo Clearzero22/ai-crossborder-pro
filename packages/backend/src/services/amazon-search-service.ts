@@ -4,7 +4,7 @@
  * 输入关键词，返回竞品 ASIN 列表。
  */
 
-import { chromium, type BrowserContext } from 'playwright';
+import { chromium, type BrowserContext } from 'playwright-core';
 import { browserConfig } from '../core/browser-config';
 import { getUserDataDir } from '../utils';
 
@@ -70,7 +70,7 @@ export class AmazonSearchService {
     console.log(`[Playwright] Navigating to search results: ${searchUrl}`);
     await page.goto(searchUrl, {
       timeout: 60000,
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
     });
 
     // 检查是否遇到验证页面

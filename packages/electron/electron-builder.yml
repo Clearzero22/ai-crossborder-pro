@@ -3,19 +3,17 @@ productName: AI CrossBorder Pro
 copyright: Copyright 2026 Clearzero2
 
 directories:
-  output: release6
+  output: release17
   buildResources: resources
 
+# Only include Electron main process in ASAR
+# Backend/Frontend go via extraResources (outside ASAR)
 files:
   - dist-electron/**/*
-  - frontend-dist/**/*
-  - backend-dist/**/*
   - package.json
+  - "!node_modules/@ai-crossborder/**/*"
 
 npmRebuild: false
-asarUnpack:
-  - backend-dist/node_modules/playwright/**
-  - backend-dist/node_modules/playwright-core/**
 
 mac:
   target:
@@ -57,7 +55,11 @@ publish:
 extraResources:
   - from: backend-dist
     to: backend-dist
+    filter:
+      - "**/*"
   - from: frontend-dist
     to: frontend-dist
   - from: backend_dist_node_modules
     to: backend_node_modules
+  - from: node-runtime/node.exe
+    to: node-runtime/node.exe

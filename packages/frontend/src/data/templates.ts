@@ -38,6 +38,19 @@ export const workflowTemplates: WorkflowTemplate[] = [
     nodeIds: ['start', 'gigab2b-crawl', 'ai-vision', 'amazon-search', 'amazon-product', 'xiyouzhaoci-keywords', 'ai-optimize', 'send-email', 'end'],
   },
   {
+    id: 'amazon-auto-selection',
+    name: 'Amazon 自动化选品优化',
+    description: '完整 6 步流水线：GigaB2B 爬取 → AI 识图提取关键词 → Amazon 竞品搜索 → 商品详情抓取 → 西柚找词 → AI 文案优化',
+    category: 'research',
+    categoryLabel: '市场调研',
+    gradient: 'from-amber-500 to-orange-600',
+    nodeIds: ['start', 'gigab2b-crawl', 'ai-vision', 'amazon-search', 'amazon-product', 'xiyouzhaoci-keywords', 'ai-optimize', 'end'],
+    defaultConfigs: {
+      'gigab2b-crawl': { productUrl: 'https://www.gigab2b.com/index.php?route=product/product&product_id=928649' },
+      'ai-optimize': { executionMode: 'gemini' },
+    },
+  },
+  {
     id: 'competitor-analysis',
     name: '竞品全面分析',
     description: '搜索Amazon竞品，抓取详情，挖掘关键词并生成对标分析报告',

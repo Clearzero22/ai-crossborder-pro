@@ -4,7 +4,7 @@
  * 从 xiyouzhaoci.com 抓取 Amazon 商品关键词数据
  */
 
-import { chromium, type Page } from 'playwright';
+import { chromium, type Page } from 'playwright-core';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { browserConfig } from '../core/browser-config';

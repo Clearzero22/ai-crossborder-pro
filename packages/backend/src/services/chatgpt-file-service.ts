@@ -10,7 +10,7 @@
  *   3. 调用此服务即可复用真实浏览器
  */
 
-import { chromium, type Browser, type BrowserContext } from 'playwright';
+import { chromium, type Browser, type BrowserContext } from 'playwright-core';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

@@ -16,6 +16,7 @@ import DataDashboardPage from './pages/DataDashboardPage';
 import IntegrationsPage from './pages/IntegrationsPage';
 import SettingsPage from './pages/SettingsPage';
 import ExecutionDataPage from './pages/ExecutionDataPage';
+import PipelineDataPage from './pages/PipelineDataPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import { navItems } from './data/navItems';
 import { getTemplateById } from './data/templates';
@@ -34,6 +35,7 @@ const pageTitles: Record<string, string> = {
   browser: '浏览器自动化',
   ai: 'AI 助手',
   tasks: '任务执行记录',
+  'pipeline-data': 'Pipeline 数据',
   dashboard: '数据看板',
   integrations: '集成中心',
   settings: '系统设置',
@@ -152,6 +154,8 @@ function AppContent() {
           <TasksPage onViewData={() => setNavActive('execution-data')} />
         ) : state.navActiveId === 'dashboard' ? (
           <DataDashboardPage />
+        ) : state.navActiveId === 'pipeline-data' ? (
+          <PipelineDataPage />
         ) : state.navActiveId === 'integrations' ? (
           <IntegrationsPage />
         ) : state.navActiveId === 'settings' ? (

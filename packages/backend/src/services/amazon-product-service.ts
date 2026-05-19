@@ -5,7 +5,7 @@
  * 自管理浏览器生命周期，参照 AmazonSearchService 模式。
  */
 
-import { chromium, type BrowserContext } from 'playwright';
+import { chromium, type BrowserContext } from 'playwright-core';
 import { browserConfig } from '../core/browser-config';
 import { getUserDataDir } from '../utils';
 
