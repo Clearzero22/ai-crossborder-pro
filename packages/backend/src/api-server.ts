@@ -1022,15 +1022,23 @@ app.route('/api/pipeline', pipelineDataRoutes);
 
 // ─── 浏览器配置 API ───────────────────────────────────────────
 
-app.get('/api/settings/browser', async (c) => {
+let _browserDb: DatabaseService | null = null;
+let _browserDbConnected = false;
+
+async function ensureBrowserDb(): Promise<void> {
+  if (_browserDbConnected && _browserDb) return;
   const db = createDb();
-  if (db) {
-    try {
-      await db.connect();
-      browserConfig.setDb(db);
-      await db.disconnect();
-    } catch { /* DB not available, use defaults */ }
-  }
+  if (!db) return;
+  try {
+    await db.connect();
+    _browserDb = db;
+    _browserDbConnected = true;
+    browserConfig.setDb(db);
+  } catch { /* DB not available, use defaults */ }
+}
+
+app.get('/api/settings/browser', async (c) => {
+  await ensureBrowserDb();
   try {
     const settings = await browserConfig.getConfig();
     const chromeStatus = browserConfig.checkChromeExists();
@@ -1042,14 +1050,7 @@ app.get('/api/settings/browser', async (c) => {
 });
 
 app.put('/api/settings/browser', async (c) => {
-  const db = createDb();
-  if (db) {
-    try {
-      await db.connect();
-      browserConfig.setDb(db);
-      await db.disconnect();
-    } catch { /* DB not available */ }
-  }
+  await ensureBrowserDb();
   try {
     const body = await c.req.json();
     const updated = await browserConfig.updateConfig({
@@ -1108,10 +1109,7 @@ app.post('/api/settings/browser/download', async (c) => {
 
       send({ type: 'progress', percent: 0, stage: '开始下载 Chromium...' });
 
-      const db = createDb();
-      if (db) {
-        try { await db.connect(); browserConfig.setDb(db); } catch { /* ignore */ }
-      }
+      await ensureBrowserDb();
 
       const result = await browserConfig.downloadPlaywrightChromium(targetPath, (p) => {
         send({ type: 'progress', ...p });
@@ -1122,10 +1120,6 @@ app.post('/api/settings/browser/download', async (c) => {
         send({ type: 'complete', path: targetPath });
       } else {
         send({ type: 'error', error: result.error });
-      }
-
-      if (db) {
-        try { await db.disconnect(); } catch { /* ignore */ }
       }
 
       controller.close();
@@ -1140,15 +1134,9 @@ app.post('/api/settings/browser/download', async (c) => {
 // ─── 浏览器档案 API ────────────────────────────────────────────
 
 async function withBrowserDb<T>(fn: (db: DatabaseService) => Promise<T>): Promise<T> {
-  const db = createDb();
-  if (!db) throw new Error('Database not available');
-  await db.connect();
-  browserConfig.setDb(db);
-  try {
-    return await fn(db);
-  } finally {
-    await db.disconnect();
-  }
+  await ensureBrowserDb();
+  if (!_browserDb) throw new Error('Database not available');
+  return await fn(_browserDb);
 }
 
 app.get('/api/settings/browser/profiles', async (c) => {
@@ -1302,3 +1290,16 @@ serve(
     console.log(`     POST /api/ai/optimize\n`);
   }
 );
+
+process.on('SIGINT', async () => {
+  if (_browserDbConnected && _browserDb) {
+    try { await _browserDb.disconnect(); } catch { /* ignore */ }
+  }
+  process.exit(0);
+});
+process.on('SIGTERM', async () => {
+  if (_browserDbConnected && _browserDb) {
+    try { await _browserDb.disconnect(); } catch { /* ignore */ }
+  }
+  process.exit(0);
+});
