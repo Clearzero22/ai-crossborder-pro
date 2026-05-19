@@ -94,7 +94,7 @@ export async function runStep6(
     info('Sending to Gemini...');
     const result = await service.chat(prompt, {
       headless: options.headless,
-      responseTimeout: 90000,
+      responseTimeout: 120000,
     });
 
     if (!result.success) {

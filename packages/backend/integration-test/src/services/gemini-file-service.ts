@@ -368,33 +368,60 @@ export class GeminiFileService {
       await this.sleep(1000);
       await textbox.press('Enter');
 
-      // Wait for response
+      // Wait for any response element to appear
       try {
-        await page.waitForSelector('[data-test-id="copy-button"], .response-content', { timeout: responseTimeout });
-        await this.sleep(3000);
+        await page.waitForSelector('[data-test-id="model-verbose-text"], .response-content, .model-response, [data-test-id="copy-button"]', {
+          timeout: responseTimeout,
+        });
       } catch (error) {
         return { success: false, prompt, response: '', fileUploaded: false, filePath: null, timestamp: new Date().toISOString(), error: `等待回复超时: ${(error as Error).message}` };
       }
 
-      // Extract response
+      // Poll until response text stabilizes (streaming finished)
       let responseText = '';
-      try {
-        const copyButton = page.locator('[data-test-id="copy-button"]').first();
-        if (await copyButton.isVisible({ timeout: 5000 })) {
-          await copyButton.click();
-          await this.sleep(500);
-          responseText = await page.evaluate(async () => navigator.clipboard.readText());
-        }
-      } catch {}
+      const stableThreshold = 3; // consecutive polls with same length
+      let stableCount = 0;
+      let lastLength = -1;
+      const pollInterval = 2000;
+      const maxPollTime = Math.min(responseTimeout, 60000);
+      const pollStart = Date.now();
 
-      if (!responseText) {
-        responseText = await page.evaluate(() => {
+      while (Date.now() - pollStart < maxPollTime) {
+        const text = await page.evaluate(() => {
           for (const sel of ['[data-test-id="model-verbose-text"]', '.response-content', '.model-response']) {
             const el = document.querySelector(sel);
-            if (el && el.textContent?.trim()?.length > 10) return el.textContent.trim();
+            if (el) {
+              const t = el.textContent?.trim() || '';
+              if (t.length > 10) return t;
+            }
           }
           return '';
         });
+
+        if (text.length > 0 && text.length === lastLength) {
+          stableCount++;
+          if (stableCount >= stableThreshold) {
+            responseText = text;
+            break;
+          }
+        } else {
+          stableCount = 0;
+          lastLength = text.length;
+        }
+
+        await this.sleep(pollInterval);
+      }
+
+      // If DOM extraction got nothing, fall back to copy-button + clipboard
+      if (!responseText) {
+        try {
+          const copyButton = page.locator('[data-test-id="copy-button"]').first();
+          if (await copyButton.isVisible({ timeout: 5000 })) {
+            await copyButton.click();
+            await this.sleep(500);
+            responseText = await page.evaluate(async () => navigator.clipboard.readText());
+          }
+        } catch {}
       }
 
       return { success: true, prompt, response: responseText, fileUploaded: false, filePath: null, timestamp: new Date().toISOString() };

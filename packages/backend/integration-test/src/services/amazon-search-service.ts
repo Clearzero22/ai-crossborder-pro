@@ -70,7 +70,7 @@ export class AmazonSearchService {
     console.log(`[Playwright] Navigating to search results: ${searchUrl}`);
     await page.goto(searchUrl, {
       timeout: 60000,
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
     });
 
     // 检查是否遇到验证页面

@@ -10,6 +10,7 @@ export interface GigaB2BCrawlResult {
 
 export interface AiVisionResult {
   analyses: string[];
+  searchKeywords: string[];
   templateUsed: string;
   model: string;
 }

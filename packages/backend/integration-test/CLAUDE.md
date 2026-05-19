@@ -20,6 +20,9 @@ npx tsx packages/backend/integration-test/run-pipeline.ts --mock
 # 有头模式 + 真实爬取
 npx tsx packages/backend/integration-test/run-pipeline.ts --real-crawl <GigaB2B商品URL>
 
+npx tsx packages/backend/integration-test/run-pipeline.ts --real-crawl https://www.gigab2b.com/index.php?route=product/product&product_id=747431
+
+
 # 跳到某一步调试（如直接测 Amazon 搜索）
 npx tsx packages/backend/integration-test/run-pipeline.ts --mock --skip-to 3
 

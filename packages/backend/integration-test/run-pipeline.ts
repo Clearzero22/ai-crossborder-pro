@@ -92,7 +92,7 @@ async function main() {
       const t = Date.now();
       ctx.step2 = await runStep2(ctx.step1, options);
       stepSuccess(2, 'AI Vision', Date.now() - t);
-      dataSnapshot('Step 2 output', { analyses: ctx.step2.analyses.length, template: ctx.step2.templateUsed });
+      dataSnapshot('Step 2 output', { analyses: ctx.step2.analyses.length, keywords: ctx.step2.searchKeywords?.length || 0, template: ctx.step2.templateUsed });
       passed++;
     } catch (err) {
       stepError(2, 'AI Vision', err);
@@ -104,11 +104,11 @@ async function main() {
   }
 
   // ─── Step 3: Amazon Search ────────────────────────────────
-  if (ctx.step1 && options.skipTo <= 3) {
+  if (ctx.step1 && ctx.step2 && options.skipTo <= 3) {
     stepStart(3, 'Amazon Search');
     try {
       const t = Date.now();
-      ctx.step3 = await runStep3(ctx.step1, options);
+      ctx.step3 = await runStep3(ctx.step1, ctx.step2, options);
       stepSuccess(3, 'Amazon Search', Date.now() - t);
       dataSnapshot('Step 3 output', { keyword: ctx.step3.keyword, asins: ctx.step3.asins.length, total: ctx.step3.total });
       passed++;
@@ -117,7 +117,7 @@ async function main() {
       failed++;
     }
   } else {
-    stepSkipped(3, 'Amazon Search', !ctx.step1 ? 'no Step 1 data' : '--skip-to');
+    stepSkipped(3, 'Amazon Search', !ctx.step2 ? 'no Step 2 data' : '--skip-to');
     skipped++;
   }
 
