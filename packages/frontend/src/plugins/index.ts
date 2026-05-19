@@ -213,22 +213,43 @@ export const aiOptimizePlugin: NodePlugin = {
       const configBulletPoints = ctx.config.productBulletPoints as string | undefined;
       const configLongDescription = ctx.config.productLongDescription as string | undefined;
 
+      // Original product title from gigab2b-crawl (the user's product, not competitor)
+      const crawlOutput = ctx.allOutputs?.['gigab2b-crawl'] as { title?: string } | undefined;
+      const originalTitle = crawlOutput?.title;
+
+      // Competitor title from upstream (xiyouzhaoci passthrough)
       const inputTitle = ctx.input.title as string | undefined;
+      const competitorTitle = ctx.input.originalTitle ? undefined : inputTitle;
+
       const inputDescription = ctx.input.description as string | undefined;
       const inputBulletPoints = ctx.input.bulletPoints as string[] | undefined;
       const inputLongDescription = ctx.input.longDescription as string | undefined;
       const images = (ctx.input.images as string[]) || [];
       const inputKeywords = (ctx.input.keywords as string[]) || [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const inputRawKeywords = (ctx.input.rawKeywords as any[]) || [];
+      let inputRawKeywords = (ctx.input.rawKeywords as any[]) || [];
 
-      // 使用配置中的数据，如果没有配置则使用上游数据
-      const title = configTitle || inputTitle;
+      // Fallback: scan allOutputs for xiyouzhaoci rawKeywords if not in direct input
+      if (inputRawKeywords.length === 0 && ctx.allOutputs) {
+        for (const output of Object.values(ctx.allOutputs)) {
+          const out = output as { rawKeywords?: any[] };
+          if (Array.isArray(out.rawKeywords) && out.rawKeywords.length > 0) {
+            inputRawKeywords = out.rawKeywords;
+            break;
+          }
+        }
+      }
+
+      // Title priority: config > originalTitle (gigab2b-crawl) > competitor title
+      const title = configTitle || originalTitle || inputTitle;
       const description = configDescription || inputDescription;
       const bulletPointsConfig = configBulletPoints?.split('\n').map(s => s.trim()).filter(s => s) || inputBulletPoints;
       const longDescription = configLongDescription || inputLongDescription;
 
-      ctx.logger('info', `使用数据源: title=${configTitle ? '配置' : '上游'}, description=${configDescription ? '配置' : '上游'}`);
+      ctx.logger('info', `使用数据源: title=${configTitle ? '配置' : originalTitle ? 'gigab2b-crawl' : '上游'}, description=${configDescription ? '配置' : '上游'}`);
+      if (originalTitle && title === originalTitle) {
+        ctx.logger('info', `使用原始产品标题: ${originalTitle.substring(0, 50)}...`);
+      }
       if (inputRawKeywords.length > 0) {
         ctx.logger('info', `注入 ${inputRawKeywords.length} 个竞品关键词（含搜索量、难度等数据）`);
       } else if (inputKeywords.length > 0) {
@@ -321,6 +342,7 @@ ${bulletText}${longDesc ? `\n- 长描述摘要: ${longDesc}` : ''}`;
         prompt = `你是一位资深的 Amazon 跨境电商 Listing 优化专家。请根据以下商品信息、竞品 Listing 和搜索关键词数据，为该商品编写一份对标竞品的高质量 Amazon Listing 文案。
 
 ${title ? `## 我的商品信息\n- 标题：${title}` : ''}
+${competitorTitle ? `## 竞品参考标题（仅作关键词参考，非本商品标题）\n- ${competitorTitle}` : ''}
 ${effectiveDescription ? `- 描述：${effectiveDescription}` : ''}
 ${bulletPointsConfig && bulletPointsConfig.length > 0 ? `- 五点描述：\n${bulletPointsConfig.map((b, i) => `  ${i + 1}. ${b}`).join('\n')}` : ''}
 ${competitorBlock}
@@ -664,6 +686,8 @@ export const aiVisionPlugin: NodePlugin = {
       results: { type: 'string[]', label: '识别结果列表' },
       firstResult: { type: 'string', label: '首张图片识别结果' },
       imageCount: { type: 'number', label: '处理图片数量' },
+      searchKeywords: { type: 'string[]', label: '提取的搜索关键词' },
+      analyses: { type: 'string[]', label: '图片分析结果列表' },
       runId: { type: 'string', label: '运行 ID' },
     },
 
@@ -697,25 +721,16 @@ export const aiVisionPlugin: NodePlugin = {
         throw new Error('上游未提供图片数据，请先执行爬虫节点');
       }
 
-      const templateId = (ctx.config.customPrompt as string)
-        ? undefined
-        : (ctx.config.templateId as string) || 'extract-features';
       const customPrompt = ctx.config.customPrompt as string | undefined;
-      const maxImages = (ctx.config.maxImages as number) || 5;
+      const maxImages = (ctx.config.maxImages as number) || 2;
       const toProcess = images.slice(0, maxImages);
       const runId = (ctx.input.runId as string) || undefined;
 
       ctx.logger('info', `共 ${images.length} 张图片，处理前 ${toProcess.length} 张`);
 
-      const results: string[] = [];
-
-      for (let i = 0; i < toProcess.length; i++) {
-        if (ctx.abortSignal.aborted) break;
-
-        const img = toProcess[i];
-        ctx.logger('info', `识别图片 ${i + 1}/${toProcess.length}...`);
-
-        const body: Record<string, unknown> = { image: img };
+      // AI API call helper
+      async function callAI(image: string, templateId: string): Promise<string> {
+        const body: Record<string, unknown> = { image };
         if (customPrompt) {
           body.prompt = customPrompt;
         } else {
@@ -730,26 +745,56 @@ export const aiVisionPlugin: NodePlugin = {
           body: JSON.stringify(body),
           signal: ctx.abortSignal,
         });
-
         if (!resp.ok) {
-          let errMsg = `图片 ${i + 1} 识别失败: HTTP ${resp.status}`;
+          let errMsg = `HTTP ${resp.status}`;
           try { const err = await resp.json(); errMsg = err.error || errMsg; } catch {}
-          ctx.logger('error', errMsg);
-          results.push(`[错误] ${errMsg}`);
-          continue;
+          throw new Error(errMsg);
         }
-
         const data = await resp.json();
-        results.push(data.result as string);
-        ctx.logger('success', `图片 ${i + 1} 识别完成`);
+        return data.result as string;
       }
 
-      ctx.logger('success', `全部完成，成功 ${results.filter(r => !r.startsWith('[错误]')).length}/${toProcess.length}`);
+      // Step 1: extract-search-keywords on first image
+      let searchKeywords: string[] = [];
+      try {
+        ctx.logger('info', `Step 1: 提取搜索关键词（第一张图）...`);
+        const keywordResult = await callAI(toProcess[0], 'extract-search-keywords');
+        // Parse keywords from AI response
+        const keywordLines = keywordResult.split('\n')
+          .map(l => l.replace(/^[\d\.\-\*\s\[\]()]+/, '').trim())
+          .filter(l => l.length > 1 && l.length < 80);
+        searchKeywords = keywordLines.slice(0, 8);
+        ctx.logger('success', `提取 ${searchKeywords.length} 个搜索关键词: ${searchKeywords.slice(0, 3).join(', ')}...`);
+      } catch (e) {
+        ctx.logger('error', `搜索关键词提取失败: ${(e as Error).message}，将回退到文本解析`);
+      }
+
+      // Step 2: extract-features on all images
+      const results: string[] = [];
+      const analyses: string[] = [];
+      for (let i = 0; i < toProcess.length; i++) {
+        if (ctx.abortSignal.aborted) break;
+        ctx.logger('info', `Step 2: 分析图片 ${i + 1}/${toProcess.length}...`);
+        try {
+          const analysis = await callAI(toProcess[i], 'extract-features');
+          results.push(analysis);
+          analyses.push(analysis);
+          ctx.logger('success', `图片 ${i + 1} 分析完成`);
+        } catch (e) {
+          const errMsg = (e as Error).message;
+          ctx.logger('error', `图片 ${i + 1} 分析失败: ${errMsg}`);
+          results.push(`[错误] ${errMsg}`);
+        }
+      }
+
+      ctx.logger('success', `全部完成，成功 ${analyses.length}/${toProcess.length}`);
 
       return {
         results,
         firstResult: results[0] || '',
         imageCount: results.length,
+        searchKeywords,
+        analyses,
         ...(runId ? { runId } : {}),
       };
     },
@@ -852,6 +897,7 @@ export const amazonSearchPlugin: NodePlugin = {
     inputSchema: {
       firstResult: { type: 'string', label: 'AI 识别结果（含搜索关键词）' },
       results: { type: 'string[]', label: 'AI 识别结果列表' },
+      searchKeywords: { type: 'string[]', label: '结构化搜索关键词（来自 ai-vision）' },
     },
 
     outputSchema: {
@@ -877,8 +923,19 @@ export const amazonSearchPlugin: NodePlugin = {
     },
 
     async execute(ctx) {
-      // 优先用 config 中的关键词，否则从 AI 识别结果中提取
+      // Priority: config keyword > searchKeywords[] from ai-vision > parse firstResult > gigab2b-crawl title
       let keyword = ctx.config.keyword as string | undefined;
+
+      // 1. Check structured searchKeywords from ai-vision
+      if (!keyword) {
+        const searchKeywords = ctx.input.searchKeywords as string[] | undefined;
+        if (searchKeywords && searchKeywords.length > 0) {
+          keyword = searchKeywords[0];
+          ctx.logger('info', `使用 ai-vision 结构化关键词: ${keyword}`);
+        }
+      }
+
+      // 2. Fallback: parse from AI text result
       if (!keyword) {
         const aiResult = ctx.input.firstResult as string | undefined;
         if (aiResult) {
@@ -886,6 +943,15 @@ export const amazonSearchPlugin: NodePlugin = {
             keyword = aiResult.split('\n').map(l => l.replace(/^[\d\.\-\*\s]+/, '').trim()).find(l => l.length > 3);
           }
           if (!keyword) keyword = aiResult.split('\n')[0]?.replace(/^[\d\.\-\*\s]+/, '').trim();
+        }
+      }
+
+      // 3. Final fallback: gigab2b-crawl product title
+      if (!keyword) {
+        const crawlOutput = ctx.allOutputs?.['gigab2b-crawl'] as { title?: string } | undefined;
+        if (crawlOutput?.title) {
+          keyword = crawlOutput.title;
+          ctx.logger('info', `使用 gigab2b-crawl 原始标题作为关键词: ${keyword}`);
         }
       }
 
@@ -1105,6 +1171,7 @@ export const xiyouzhaociPlugin: NodePlugin = {
       rawKeywords: { type: 'string', label: '完整关键词数据 JSON（含搜索量、难度等）' },
       // 透传上游竞品数据
       title: { type: 'string', label: '竞品标题（透传）' },
+      originalTitle: { type: 'string', label: '原始产品标题（来自 gigab2b-crawl）' },
       brand: { type: 'string', label: '竞品品牌（透传）' },
       price: { type: 'string', label: '竞品价格（透传）' },
       bulletPoints: { type: 'string[]', label: '竞品五点描述（透传）' },
@@ -1191,6 +1258,8 @@ export const xiyouzhaociPlugin: NodePlugin = {
         price: ctx.input.price as string | undefined,
         bulletPoints: ctx.input.bulletPoints as string[] | undefined,
         longDescription: ctx.input.longDescription as string | undefined,
+        // 透传原始产品标题（来自 gigab2b-crawl）
+        originalTitle: (ctx.allOutputs?.['gigab2b-crawl'] as { title?: string } | undefined)?.title,
       };
     },
   },
