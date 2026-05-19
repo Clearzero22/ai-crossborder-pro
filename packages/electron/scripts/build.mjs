@@ -99,6 +99,13 @@ console.log(`  All critical dependencies present`);
 // Only copy node_modules to extraResources location (single copy)
 copyDir(path.join(tmpDir, 'node_modules'), extraNodeModules);
 
+// Copy node_modules into backend-dist so Node.js can resolve packages
+// without relying on NODE_PATH (which doesn't work for ESM packages like playwright)
+const backendNodeModules = path.join(backendDistDir, 'node_modules');
+safeRmSync(backendNodeModules, 'backend-dist/node_modules');
+copyDir(path.join(tmpDir, 'node_modules'), backendNodeModules);
+console.log(`  Copied node_modules into backend-dist (${fs.readdirSync(backendNodeModules).length} packages)`);
+
 safeRmSync(tmpDir, '.deps-tmp (cleanup)');
 
 console.log('\n=== Artifacts ready ===');
