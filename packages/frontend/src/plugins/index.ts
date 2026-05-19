@@ -789,7 +789,7 @@ export const aiVisionPlugin: NodePlugin = {
           keywordRawText = keywordResult;
           searchKeywords = parseKeywords(keywordResult);
           if (searchKeywords.length === 0) {
-            ctx.logger('warn', `关键词解析结果为空，原始文本: ${keywordResult.substring(0, 100)}...`);
+            ctx.logger('error', `关键词解析结果为空，原始文本: ${keywordResult.substring(0, 100)}...`);
           } else {
             ctx.logger('success', `提取 ${searchKeywords.length} 个搜索关键词: ${searchKeywords.slice(0, 3).join(', ')}...`);
           }
