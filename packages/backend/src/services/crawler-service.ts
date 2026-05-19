@@ -75,7 +75,7 @@ export class CrawlerService {
 
     try {
       // 2. 执行爬虫（使用统一的 Chrome profile，确保登录状态共享）
-      const { chromium } = await import('playwright');
+      const { chromium } = await import('playwright-core');
       // ⚠️ 重要：统一使用共享的浏览器数据目录
       const sharedProfileDir = await getUserDataDir();
       const launchExtras = await browserConfig.getLaunchOptions();

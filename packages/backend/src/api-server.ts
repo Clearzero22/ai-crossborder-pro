@@ -1065,7 +1065,7 @@ app.put('/api/settings/browser', async (c) => {
 
 app.post('/api/settings/browser/test', async (c) => {
   try {
-    const { chromium } = await import('playwright');
+    const { chromium } = await import('playwright-core');
     const launchOpts = await browserConfig.getLaunchOptions();
     const browser = await chromium.launch({
       ...launchOpts,

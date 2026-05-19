@@ -1,4 +1,4 @@
-import { Page } from 'playwright';
+import { Page } from 'playwright-core';
 import { BaseCrawler } from '../base-crawler';
 import { GigaB2BConfig, GigaB2BStaging, GigaB2BClean } from './config';
 import { GigaB2BExtractor } from './extractor';

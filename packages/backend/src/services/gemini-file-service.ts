@@ -5,7 +5,7 @@
  * 自管理浏览器生命周期，支持文件上传和文本交互。
  */
 
-import { chromium, type BrowserContext } from 'playwright';
+import { chromium, type BrowserContext } from 'playwright-core';
 import { browserConfig } from '../core/browser-config';
 import * as fs from 'fs';
 import { getUserDataDir } from '../utils';

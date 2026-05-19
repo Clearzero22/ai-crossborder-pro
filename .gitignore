@@ -4,14 +4,7 @@ dist-electron/
 frontend-dist/
 backend-dist/
 backend_dist_node_modules/
-release/
-release2/
-release3/
-release4/
-release5/
-release6/
-release7/
-release13/
+release*/
 **/data/*.db
 **/data/*.db-wal
 **/data/*.db-shm

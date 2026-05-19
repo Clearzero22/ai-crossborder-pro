@@ -4,7 +4,7 @@
  * 输入关键词，返回竞品 ASIN 列表。
  */
 
-import { chromium, type BrowserContext } from 'playwright';
+import { chromium, type BrowserContext } from 'playwright-core';
 import { browserConfig } from '../core/browser-config';
 import { getUserDataDir } from '../utils';
 
