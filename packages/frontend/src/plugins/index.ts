@@ -687,6 +687,7 @@ export const aiVisionPlugin: NodePlugin = {
       firstResult: { type: 'string', label: '首张图片识别结果' },
       imageCount: { type: 'number', label: '处理图片数量' },
       searchKeywords: { type: 'string[]', label: '提取的搜索关键词' },
+      keywordRawText: { type: 'string', label: '关键词原始 AI 文本' },
       analyses: { type: 'string[]', label: '图片分析结果列表' },
       runId: { type: 'string', label: '运行 ID' },
     },
@@ -722,11 +723,11 @@ export const aiVisionPlugin: NodePlugin = {
       }
 
       const customPrompt = ctx.config.customPrompt as string | undefined;
-      const maxImages = (ctx.config.maxImages as number) || 2;
-      const toProcess = images.slice(0, maxImages);
+      const configTemplateId = ctx.config.templateId as string | undefined;
+      const maxImages = (ctx.config.maxImages as number) || 1;
       const runId = (ctx.input.runId as string) || undefined;
 
-      ctx.logger('info', `共 ${images.length} 张图片，处理前 ${toProcess.length} 张`);
+      ctx.logger('info', `共 ${images.length} 张图片，处理前 ${Math.min(images.length, maxImages)} 张`);
 
       // AI API call helper
       async function callAI(image: string, templateId: string): Promise<string> {
@@ -754,31 +755,61 @@ export const aiVisionPlugin: NodePlugin = {
         return data.result as string;
       }
 
-      // Step 1: extract-search-keywords on first image
-      let searchKeywords: string[] = [];
-      try {
-        ctx.logger('info', `Step 1: 提取搜索关键词（第一张图）...`);
-        const keywordResult = await callAI(toProcess[0], 'extract-search-keywords');
-        // Parse keywords from AI response
-        const keywordLines = keywordResult.split('\n')
-          .map(l => l.replace(/^[\d\.\-\*\s\[\]()]+/, '').trim())
-          .filter(l => l.length > 1 && l.length < 80);
-        searchKeywords = keywordLines.slice(0, 8);
-        ctx.logger('success', `提取 ${searchKeywords.length} 个搜索关键词: ${searchKeywords.slice(0, 3).join(', ')}...`);
-      } catch (e) {
-        ctx.logger('error', `搜索关键词提取失败: ${(e as Error).message}，将回退到文本解析`);
+      // Parse keywords from AI text with multiple strategies
+      function parseKeywords(text: string): string[] {
+        const lines = text.split('\n')
+          .map(l => l.replace(/^[\d\.\-\*\s\[\]()#>]+/, '').trim())
+          .filter(l => l.length > 3 && l.length < 120);
+
+        const englishLines = lines.filter(l => {
+          const englishChars = l.replace(/[^a-zA-Z\s\-]/g, '');
+          return englishChars.length / Math.max(l.length, 1) > 0.7;
+        });
+
+        if (englishLines.length >= 2) {
+          return englishLines.slice(0, 8);
+        }
+
+        return lines.filter(l => !l.startsWith('要求') && !l.startsWith('示例') && !l.startsWith('注意'))
+          .slice(0, 8);
       }
 
-      // Step 2: extract-features on all images
+      const templateId = configTemplateId || 'extract-features';
+      const toProcess = images.slice(0, maxImages);
+      const isKeywordMode = templateId === 'extract-search-keywords';
+
+      // 关键词提取模式：第一张图提取关键词
+      let searchKeywords: string[] = [];
+      let keywordRawText = '';
+
+      if (isKeywordMode) {
+        try {
+          ctx.logger('info', `提取搜索关键词（第一张图）...`);
+          const keywordResult = await callAI(toProcess[0], 'extract-search-keywords');
+          keywordRawText = keywordResult;
+          searchKeywords = parseKeywords(keywordResult);
+          if (searchKeywords.length === 0) {
+            ctx.logger('warn', `关键词解析结果为空，原始文本: ${keywordResult.substring(0, 100)}...`);
+          } else {
+            ctx.logger('success', `提取 ${searchKeywords.length} 个搜索关键词: ${searchKeywords.slice(0, 3).join(', ')}...`);
+          }
+        } catch (e) {
+          ctx.logger('error', `搜索关键词提取失败: ${(e as Error).message}`);
+        }
+      }
+
+      // 通用图片分析：按配置的模板处理每张图片
+      // 关键词模式时跳过第一张图（已单独提取过关键词）
       const results: string[] = [];
       const analyses: string[] = [];
-      for (let i = 0; i < toProcess.length; i++) {
+      const startIdx = isKeywordMode ? 1 : 0;
+      for (let i = startIdx; i < toProcess.length; i++) {
         if (ctx.abortSignal.aborted) break;
-        ctx.logger('info', `Step 2: 分析图片 ${i + 1}/${toProcess.length}...`);
+        ctx.logger('info', `分析图片 ${i + 1}/${toProcess.length} (${templateId})...`);
         try {
-          const analysis = await callAI(toProcess[i], 'extract-features');
-          results.push(analysis);
-          analyses.push(analysis);
+          const result = await callAI(toProcess[i], templateId);
+          results.push(result);
+          analyses.push(result);
           ctx.logger('success', `图片 ${i + 1} 分析完成`);
         } catch (e) {
           const errMsg = (e as Error).message;
@@ -787,13 +818,19 @@ export const aiVisionPlugin: NodePlugin = {
         }
       }
 
+      // 关键词模式时，把关键词文本作为 results[0]（确保 firstResult 是关键词）
+      if (isKeywordMode && keywordRawText) {
+        results.unshift(keywordRawText);
+      }
+
       ctx.logger('success', `全部完成，成功 ${analyses.length}/${toProcess.length}`);
 
       return {
         results,
-        firstResult: results[0] || '',
+        firstResult: results[0] || keywordRawText || '',
         imageCount: results.length,
         searchKeywords,
+        keywordRawText,
         analyses,
         ...(runId ? { runId } : {}),
       };
@@ -863,6 +900,10 @@ export const gigab2bCrawlPlugin: NodePlugin = {
       const data = await resp.json();
       ctx.logger('success', `抓取完成: ${data.product?.title || '未知'}`);
 
+      // 过滤 banner 设计图，只保留商品主图
+      const allImages: string[] = data.product?.images || [];
+      const productImages = allImages.filter((img: string) => !img.includes('bannerDesign'));
+
       return {
         runId: data.runId,
         externalId: data.product?.externalId,
@@ -870,7 +911,7 @@ export const gigab2bCrawlPlugin: NodePlugin = {
         price: data.product?.price ? Number(data.product.price) : undefined,
         currency: data.product?.currency,
         description: data.product?.description,
-        images: data.product?.images,
+        images: productImages,
         specifications: data.product?.specifications,
       };
     },
@@ -898,6 +939,7 @@ export const amazonSearchPlugin: NodePlugin = {
       firstResult: { type: 'string', label: 'AI 识别结果（含搜索关键词）' },
       results: { type: 'string[]', label: 'AI 识别结果列表' },
       searchKeywords: { type: 'string[]', label: '结构化搜索关键词（来自 ai-vision）' },
+      keywordRawText: { type: 'string', label: '关键词原始 AI 文本（来自 ai-vision）' },
     },
 
     outputSchema: {
@@ -923,7 +965,7 @@ export const amazonSearchPlugin: NodePlugin = {
     },
 
     async execute(ctx) {
-      // Priority: config keyword > searchKeywords[] from ai-vision > parse firstResult > gigab2b-crawl title
+      // Priority: config keyword > searchKeywords[] > keywordRawText parse > firstResult parse > gigab2b-crawl title
       let keyword = ctx.config.keyword as string | undefined;
 
       // 1. Check structured searchKeywords from ai-vision
@@ -935,7 +977,26 @@ export const amazonSearchPlugin: NodePlugin = {
         }
       }
 
-      // 2. Fallback: parse from AI text result
+      // 2. Fallback: parse from keywordRawText (the actual keyword extraction result, not feature analysis)
+      if (!keyword) {
+        const rawText = ctx.input.keywordRawText as string | undefined;
+        if (rawText) {
+          const lines = rawText.split('\n')
+            .map(l => l.replace(/^[\d\.\-\*\s\[\]()#>]+/, '').trim())
+            .filter(l => l.length > 3 && l.length < 120);
+          // Prefer English keyword lines
+          const englishLines = lines.filter(l => {
+            const en = l.replace(/[^a-zA-Z\s\-]/g, '');
+            return en.length / Math.max(l.length, 1) > 0.7;
+          });
+          keyword = (englishLines.length > 0 ? englishLines : lines)[0];
+          if (keyword) {
+            ctx.logger('info', `从 keywordRawText 解析关键词: ${keyword}`);
+          }
+        }
+      }
+
+      // 3. Fallback: parse from firstResult (extract-features text - less reliable)
       if (!keyword) {
         const aiResult = ctx.input.firstResult as string | undefined;
         if (aiResult) {
@@ -946,7 +1007,7 @@ export const amazonSearchPlugin: NodePlugin = {
         }
       }
 
-      // 3. Final fallback: gigab2b-crawl product title
+      // 4. Final fallback: gigab2b-crawl product title
       if (!keyword) {
         const crawlOutput = ctx.allOutputs?.['gigab2b-crawl'] as { title?: string } | undefined;
         if (crawlOutput?.title) {
