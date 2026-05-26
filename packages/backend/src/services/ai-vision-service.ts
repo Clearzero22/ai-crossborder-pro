@@ -13,6 +13,7 @@
 import OpenAI from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
+import { apiKeyConfig } from '../core/api-key-config';
 
 // ─── 配置 ────────────────────────────────────────────────────
 
@@ -145,19 +146,66 @@ export class AiVisionService {
   private client: OpenAI;
   private model: string;
 
-  constructor(options?: {
+  /**
+   * 异步工厂方法创建 AiVisionService 实例
+   * 优先从设置界面(apiKeyConfig)读取配置，其次环境变量
+   */
+  static async create(options?: {
     apiKey?: string;
     baseURL?: string;
     model?: string;
-  }) {
-    const apiKey = options?.apiKey || process.env.DASHSCOPE_API_KEY;
-    if (!apiKey) throw new Error('DASHSCOPE_API_KEY 未设置');
+  }, db?: any): Promise<AiVisionService | null> {
+    let apiKey = options?.apiKey;
+    let baseURL = options?.baseURL;
 
+    // 优先级1: 传入的参数
+    // 优先级2: 从 apiKeyConfig (数据库/设置界面)
+    if (!apiKey) {
+      try {
+        // 如果调用方提供了 db 实例，使用它
+        if (db) {
+          apiKeyConfig.setDb(db);
+        }
+
+        const config = await apiKeyConfig.getProviderConfig('qwen');
+        if (config?.apiKey) {
+          apiKey = config.apiKey;
+          baseURL = baseURL || config.baseURL;
+          console.log('[AiVisionService] Using API Key from settings (qwen)');
+        }
+      } catch (err) {
+        console.warn('[AiVisionService] Failed to read from apiKeyConfig:', err);
+      }
+    }
+
+    // 优先级3: 环境变量
+    if (!apiKey) {
+      apiKey = process.env.DASHSCOPE_API_KEY;
+      baseURL = baseURL || process.env.DASHSCOPE_BASE_URL;
+      if (apiKey) {
+        console.log('[AiVisionService] Using API Key from environment');
+      }
+    }
+
+    if (!apiKey) {
+      console.log('[AiVisionService] No API Key available from any source');
+      return null;
+    }
+
+    return new AiVisionService(apiKey, baseURL, options?.model);
+  }
+
+  // 私有构造函数，强制使用工厂方法
+  private constructor(
+    apiKey: string,
+    baseURL?: string,
+    model?: string,
+  ) {
     this.client = new OpenAI({
       apiKey,
-      baseURL: options?.baseURL || DEFAULT_BASE_URL,
+      baseURL: baseURL || DEFAULT_BASE_URL,
     });
-    this.model = options?.model || DEFAULT_MODEL;
+    this.model = model || DEFAULT_MODEL;
   }
 
   /** 单图识别 */

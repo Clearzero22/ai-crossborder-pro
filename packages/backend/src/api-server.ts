@@ -50,12 +50,8 @@ const PORT = Number(process.env.PORT) || 3456;
 
 const crawlerService = new CrawlerService();
 
-function createVisionService(): AiVisionService | null {
-  try {
-    return new AiVisionService();
-  } catch {
-    return null;
-  }
+async function createVisionService(db?: DatabaseService): Promise<AiVisionService | null> {
+  return await AiVisionService.create({}, db);
 }
 
 function createDb(): DatabaseService | null {
@@ -106,12 +102,18 @@ app.get('/api/health', async (c) => {
     try {
       await db.connect();
       dbConnected = true;
-      await db.disconnect();
     } catch {
       // DB not available
     }
   }
-  const vision = createVisionService();
+  const vision = await createVisionService(dbConnected ? db : undefined);
+  if (db && dbConnected) {
+    try {
+      await db.disconnect();
+    } catch {
+      // ignore disconnect error
+    }
+  }
   return c.json({
     status: 'ok',
     db: dbConnected,
@@ -267,11 +269,6 @@ app.get('/api/ai/templates', async (c) => {
 // ─── POST /api/ai/recognize ──────────────────────────────────
 
 app.post('/api/ai/recognize', async (c) => {
-  const vision = createVisionService();
-  if (!vision) {
-    return c.json({ success: false, error: 'DASHSCOPE_API_KEY 未配置' }, 503);
-  }
-
   let body: {
     image?: string; prompt?: string; templateId?: string; model?: string;
     runId?: string; nodeId?: string;
@@ -293,6 +290,15 @@ app.post('/api/ai/recognize', async (c) => {
   if (body.runId) {
     db = createDb();
     try { await db!.connect(); } catch { db = null; }
+  }
+
+  // 创建 Vision Service（传入 db 以便读取 API Key）
+  const vision = await createVisionService(db);
+  if (!vision) {
+    if (db) {
+      try { await db.disconnect(); } catch {}
+    }
+    return c.json({ success: false, error: 'AI 服务未配置，请在设置界面配置 API Key' }, 503);
   }
 
   try {
@@ -367,11 +373,6 @@ app.get('/api/ai/results', async (c) => {
 // ─── POST /api/ai/compare ────────────────────────────────────
 
 app.post('/api/ai/compare', async (c) => {
-  const vision = createVisionService();
-  if (!vision) {
-    return c.json({ success: false, error: 'DASHSCOPE_API_KEY 未配置' }, 503);
-  }
-
   let body: { images?: string[]; prompt?: string; templateId?: string; model?: string };
   try {
     body = await c.req.json();
@@ -385,12 +386,23 @@ app.post('/api/ai/compare', async (c) => {
 
   const promptOrTemplate = body.templateId || body.prompt || 'compare-products';
 
+  // 创建 Vision Service（传入 db 以便读取 API Key）
+  const db = createDb();
+  try { await db.connect(); } catch {}
+  const vision = await createVisionService(db);
+  if (!vision) {
+    try { await db.disconnect(); } catch {}
+    return c.json({ success: false, error: 'AI 服务未配置，请在设置界面配置 API Key' }, 503);
+  }
+
   try {
     const result = await vision.compare(body.images, promptOrTemplate, body.model);
     return c.json({ success: true, result });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return c.json({ success: false, error: message }, 500);
+  } finally {
+    try { await db.disconnect(); } catch {}
   }
 });
 
