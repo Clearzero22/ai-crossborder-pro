@@ -1,0 +1,114 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    // ========== 前端调试 ==========
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug Frontend (Chrome)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/packages/frontend",
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/src/*"
+      },
+      "preLaunchTask": "npm: dev:frontend"
+    },
+    {
+      "type": "edge",
+      "request": "launch",
+      "name": "Debug Frontend (Edge)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/packages/frontend",
+      "preLaunchTask": "npm: dev:frontend"
+    },
+
+    // ========== 后端调试 ==========
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Backend (API Server)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "tsx",
+        "watch",
+        "--inspect",
+        "src/api-server.ts"
+      ],
+      "cwd": "${workspaceFolder}/packages/backend",
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "3456"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "restart": true
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Backend",
+      "port": 9229,
+      "restart": true,
+      "cwd": "${workspaceFolder}/packages/backend"
+    },
+
+    // ========== Electron 调试 ==========
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Electron Main",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "args": [
+        ".",
+        "--remote-debugging-port=9223"
+      ],
+      "cwd": "${workspaceFolder}/packages/electron",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "chrome",
+      "request": "attach",
+      "name": "Debug Electron Renderer",
+      "port": 9223,
+      "webRoot": "${workspaceFolder}/packages/frontend",
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/src/*"
+      }
+    },
+
+    // ========== 全栈调试 (同时启动前后端) ==========
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Full Stack (Backend + Frontend)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Electron (Main + Renderer)",
+      "configurations": [
+        "Debug Electron Main",
+        "Debug Electron Renderer"
+      ],
+      "preLaunchTask": "npm: build:electron",
+      "stopAll": true
+    },
+    {
+      "name": "Debug Full Stack (All)",
+      "configurations": [
+        "Debug Backend (API Server)",
+        "Debug Frontend (Chrome)"
+      ],
+      "stopAll": true
+    }
+  ]
+}

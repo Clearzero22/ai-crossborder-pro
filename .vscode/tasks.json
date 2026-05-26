@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "dev:frontend",
+      "label": "npm: dev:frontend",
+      "detail": "启动前端开发服务器",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "type": "npm",
+      "script": "dev:backend",
+      "label": "npm: dev:backend",
+      "detail": "启动后端 API 服务器"
+    },
+    {
+      "type": "npm",
+      "script": "dev:electron",
+      "label": "npm: dev:electron",
+      "detail": "启动 Electron 开发模式"
+    },
+    {
+      "type": "npm",
+      "script": "dev",
+      "label": "npm: dev",
+      "detail": "同时启动前端、后端和 Electron"
+    },
+    {
+      "type": "npm",
+      "script": "build",
+      "label": "npm: build",
+      "detail": "构建所有包"
+    },
+    {
+      "type": "npm",
+      "script": "build:electron",
+      "label": "npm: build:electron",
+      "detail": "构建 Electron"
+    },
+    {
+      "type": "shell",
+      "label": "Clean Release Folders",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Get-ChildItem -Path packages/electron -Directory -Filter 'release*' | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; Write-Host 'Release folders cleaned'"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}
