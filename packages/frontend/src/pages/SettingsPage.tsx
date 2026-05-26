@@ -7,6 +7,7 @@ import type { PrimaryColor } from '../hooks/useTheme';
 import { useSoundSettings } from '../hooks/useSoundSettings';
 import SoftwareUpdateSection from '../components/SoftwareUpdateSection';
 import BrowserConfigSection from '../components/BrowserConfigSection';
+import ApiKeyConfigSection from '../components/ApiKeyConfigSection';
 
 interface SettingSection {
   id: string;
@@ -53,14 +54,6 @@ const staticSections: SettingSection[] = [
       { label: '失败重试次数', description: '节点失败后自动重试', type: 'select', value: '3 次' },
       { label: '日志保留天数', description: '执行日志自动清理周期', type: 'select', value: '30 天' },
       { label: '并发执行数', description: '同时运行的最大工作流数', type: 'select', value: '5 个' },
-    ],
-  },
-  {
-    id: 'api', label: 'API 密钥', icon: 'key',
-    items: [
-      { label: 'Claude API Key', description: '用于 AI 文案优化等功能', type: 'text', value: 'sk-••••••••••••••••' },
-      { label: 'OpenAI API Key', description: '用于 GPT 模型调用', type: 'text', value: 'sk-••••••••••••••••' },
-      { label: 'Webhook Secret', description: '回调签名验证密钥', type: 'button' },
     ],
   },
   {
@@ -242,6 +235,9 @@ export default function SettingsPage() {
 
         {/* 设置分区 */}
         <div className="space-y-4">
+          {/* API Provider 配置 */}
+          <ApiKeyConfigSection />
+
           {staticSections.map(s => (
             <StaticSection key={s.id} section={s} />
           ))}

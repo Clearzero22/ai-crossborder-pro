@@ -22,6 +22,7 @@ import { navItems } from './data/navItems';
 import { getTemplateById } from './data/templates';
 import { SoundProvider } from './hooks/useSoundSettings';
 import { BrowserSettingsProvider } from './hooks/useBrowserSettings';
+import { AiKeySettingsProvider } from './hooks/useAiKeySettings';
 import { PlanProvider } from './context/PlanContext';
 
 // websocket 连接地址
@@ -181,7 +182,9 @@ export default function App() {
     <PlanProvider wsUrl={WS_URL}>
       <SoundProvider>
         <BrowserSettingsProvider>
-          <AppContent />
+          <AiKeySettingsProvider>
+            <AppContent />
+          </AiKeySettingsProvider>
         </BrowserSettingsProvider>
       </SoundProvider>
     </PlanProvider>

@@ -7,6 +7,7 @@ import { initAutoUpdater, skipVersion, downloadUpdate, installUpdate, checkForUp
 
 // API key names to forward from .env to the backend process
 const API_KEY_ENV_VARS = [
+  // AI Provider Keys
   'DASHSCOPE_API_KEY',
   'DASHSCOPE_BASE_URL',
   'OPENAI_API_KEY',
@@ -15,6 +16,21 @@ const API_KEY_ENV_VARS = [
   'CLAUDE_BASE_URL',
   'GEMINI_API_KEY',
   'GEMINI_BASE_URL',
+  // Database Configuration (SQLite)
+  'DB_DRIVER',
+  'DB_PATH',
+  // Database Configuration (PostgreSQL)
+  'DB_HOST',
+  'DB_PORT',
+  'DB_NAME',
+  'DB_USER',
+  'DB_PASS',
+  'DATABASE_URL',
+  // Browser Configuration
+  'BROWSER_MODE',
+  'BROWSER_PLAYWRIGHT_PATH',
+  // Runtime Configuration
+  'PLAYWRIGHT_BROWSERS_PATH',
 ];
 
 let mainWindow: BrowserWindow | null = null;
