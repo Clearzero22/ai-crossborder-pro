@@ -3,7 +3,7 @@
   "typescript.preferences.importModuleSpecifier": "relative",
   "typescript.suggest.autoImports": true,
   "typescript.updateImportsOnFileMove.enabled": "always",
-  
+
   // 编辑器配置
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -12,7 +12,7 @@
   },
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
-  
+
   // 文件排除
   "files.exclude": {
     "**/node_modules": true,
@@ -26,7 +26,7 @@
     "**/dist/**": true,
     "**/release*/**": true
   },
-  
+
   // 搜索排除
   "search.exclude": {
     "**/node_modules": true,
@@ -35,7 +35,7 @@
     "**/release*": true,
     "**/package-lock.json": true
   },
-  
+
   // ESLint 配置
   "eslint.workingDirectories": [
     "./packages/frontend",
@@ -48,41 +48,23 @@
     "typescript",
     "typescriptreact"
   ],
-  
+
   // 调试配置
   "debug.javascript.autoAttachFilter": "smart",
   "debug.javascript.breakOnConditionalException": "all",
   "debug.javascript.terminalOptions": {
-    "skipFiles": [
-      "<node_internals>/**"
-    ]
+    "skipFiles": ["<node_internals>/**"]
   },
-  
-  // 终端配置
-  "terminal.integrated.defaultProfile.windows": "PowerShell",
-  "terminal.integrated.profiles.windows": {
-    "PowerShell": {
-      "source": "PowerShell",
-      "args": ["-NoExit", "-Command", "cd ${workspaceFolder}"]
-    }
-  },
-  
+
   // 任务配置
   "task.autoDetect": "off",
-  
+
   // 预览配置
   "workbench.editor.enablePreview": false,
-  
+
   // 文件关联
   "files.associations": {
     "*.mjs": "javascript",
     "*.cjs": "javascript"
-  },
-  
-  // 自定义颜色主题（可选）
-  "workbench.colorCustomizations": {
-    "activityBar.background": "#1e1e1e",
-    "sideBar.background": "#252526",
-    "editor.background": "#1e1e1e"
   }
 }

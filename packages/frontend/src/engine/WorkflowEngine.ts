@@ -1,14 +1,18 @@
-import { DataBus } from './DataBus';
-import type { NodeExecutor, EngineCallbacks, EngineNode, ExecutionMode } from './types';
+import { DataBus } from "./DataBus";
+import type {
+  NodeExecutor,
+  EngineCallbacks,
+  EngineNode,
+  ExecutionMode,
+} from "./types";
 
 // 工作流执行引擎，使用引擎
-
 
 export class WorkflowEngine {
   private executors = new Map<string, NodeExecutor>();
   private abortController: AbortController | null = null;
   private dataBus = new DataBus();
-  private executionMode: ExecutionMode = 'auto';
+  private executionMode: ExecutionMode = "auto";
   private nextStepResolve: (() => void) | null = null;
   private waitingNodeId: string | null = null;
   /** Called in manual mode when waiting for user to click "next step" */
@@ -44,12 +48,12 @@ export class WorkflowEngine {
 
   /** Switch to manual mode */
   switchToManualMode(): void {
-    this.executionMode = 'manual';
+    this.executionMode = "manual";
   }
 
   /** Switch to auto mode and continue execution */
   switchToAutoMode(): void {
-    this.executionMode = 'auto';
+    this.executionMode = "auto";
     if (this.nextStepResolve) {
       this.nextStepResolve();
       this.nextStepResolve = null;
@@ -84,7 +88,7 @@ export class WorkflowEngine {
     });
   }
 
-  /** Execute step nodes sequentially with data chaining */
+  /** Execute step nodes sequentially with data chaining  串行遍历所有的 step 节点*/
   async execute(
     nodes: EngineNode[],
     callbacks: EngineCallbacks,
@@ -95,10 +99,10 @@ export class WorkflowEngine {
   ): Promise<void> {
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
-    const stepNodes = nodes.filter(n => n.type === 'step').slice(startIndex);
+    const stepNodes = nodes.filter((n) => n.type === "step").slice(startIndex);
     this.dataBus.clear();
 
-    callbacks.onProgress(0, nodes.filter(n => n.type === 'step').length);
+    callbacks.onProgress(0, nodes.filter((n) => n.type === "step").length);
 
     // Set execution mode from parameter or keep current
     if (executionMode !== undefined) {
@@ -115,9 +119,12 @@ export class WorkflowEngine {
       const node = stepNodes[i];
       const executor = this.executors.get(node.id);
 
-      callbacks.onNodeStatus(node.id, 'running');
-      callbacks.onProgress(startIndex + i + 1, nodes.filter(n => n.type === 'step').length);
-      callbacks.onLog('info', node.id, node.label, `执行中: ${node.label}...`);
+      callbacks.onNodeStatus(node.id, "running");
+      callbacks.onProgress(
+        startIndex + i + 1,
+        nodes.filter((n) => n.type === "step").length,
+      );
+      callbacks.onLog("info", node.id, node.label, `执行中: ${node.label}...`);
 
       // Log data reception if previous output exists
       const previousStep = stepNodes[i - 1];
@@ -127,54 +134,70 @@ export class WorkflowEngine {
           const summary = Object.entries(prevOutput)
             .slice(0, 2)
             .map(([k, v]) => `${k}: ${String(v).slice(0, 40)}`)
-            .join(', ');
-          callbacks.onLog('info', 'system', '系统', `← 接收数据: ${summary}`);
+            .join(", ");
+          callbacks.onLog("info", "system", "系统", `← 接收数据: ${summary}`);
         }
       }
 
       if (!executor) {
-        callbacks.onNodeStatus(node.id, 'error');
-        callbacks.onLog('error', node.id, node.label, `失败: 未找到节点执行器 "${node.id}"`);
+        callbacks.onNodeStatus(node.id, "error");
+        callbacks.onLog(
+          "error",
+          node.id,
+          node.label,
+          `失败: 未找到节点执行器 "${node.id}"`,
+        );
         continue;
       }
 
       try {
-        const previousOutput = i > 0 ? this.dataBus.getOutput(stepNodes[i - 1].id) : undefined;
+        const previousOutput =
+          i > 0 ? this.dataBus.getOutput(stepNodes[i - 1].id) : undefined;
 
         const output = await executor.execute({
           nodeId: node.id,
           config: { ...(nodeConfigs[node.id] ?? {}), ...globalConfig },
           input: previousOutput ?? {},
           allOutputs: this.dataBus.getAllOutputs(),
-          logger: (level, msg) => callbacks.onLog(level, node.id, node.label, msg),
+          logger: (level, msg) =>
+            callbacks.onLog(level, node.id, node.label, msg),
           abortSignal: signal,
         });
 
         if (signal.aborted) break;
 
         this.dataBus.setOutput(node.id, output);
-        callbacks.onNodeStatus(node.id, 'success');
+        callbacks.onNodeStatus(node.id, "success");
         callbacks.onNodeOutput(node.id, output);
 
         const outputSummary = Object.entries(output)
           .slice(0, 2)
           .map(([k, v]) => `${k}: ${String(v).slice(0, 40)}`)
-          .join(', ');
-        callbacks.onLog('success', node.id, node.label, `完成: ${outputSummary}`);
+          .join(", ");
+        callbacks.onLog(
+          "success",
+          node.id,
+          node.label,
+          `完成: ${outputSummary}`,
+        );
 
         // Manual mode: wait for user to click "next step" before continuing
-        if (this.executionMode === 'manual' && i < stepNodes.length - 1) {
+        if (this.executionMode === "manual" && i < stepNodes.length - 1) {
           const nextNode = stepNodes[i + 1];
           this.onManualWait?.(nextNode.id, nextNode.label);
           await this.waitForNext(nextNode.id);
 
           if (signal.aborted) break;
         }
-
       } catch (err) {
         if (signal.aborted) break;
-        callbacks.onNodeStatus(node.id, 'error');
-        callbacks.onLog('error', node.id, node.label, `失败: ${err instanceof Error ? err.message : '未知错误'}`);
+        callbacks.onNodeStatus(node.id, "error");
+        callbacks.onLog(
+          "error",
+          node.id,
+          node.label,
+          `失败: ${err instanceof Error ? err.message : "未知错误"}`,
+        );
       }
     }
 
@@ -197,6 +220,8 @@ export class WorkflowEngine {
   }
 
   get running(): boolean {
-    return this.abortController !== null && !this.abortController.signal.aborted;
+    return (
+      this.abortController !== null && !this.abortController.signal.aborted
+    );
   }
 }

@@ -2,7 +2,6 @@
 
 // 数据总线
 
-
 export class DataBus {
   private outputs = new Map<string, Record<string, unknown>>();
 
@@ -16,13 +15,16 @@ export class DataBus {
 
   /** Resolve {{nodeId.fieldName}} expressions in a template string */
   resolve(template: string): unknown {
-    return template.replace(/\{\{([^.}]+)\.([^}]+)\}\}/g, (_match, nodeId, field) => {
-      const output = this.outputs.get(nodeId);
-      if (output && field in output) {
-        return String(output[field]);
-      }
-      return _match;
-    });
+    return template.replace(
+      /\{\{([^.}]+)\.([^}]+)\}\}/g,
+      (_match, nodeId, field) => {
+        const output = this.outputs.get(nodeId);
+        if (output && field in output) {
+          return String(output[field]);
+        }
+        return _match;
+      },
+    );
   }
 
   /** Resolve all outputs into a single flat record */
