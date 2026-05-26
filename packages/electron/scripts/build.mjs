@@ -101,6 +101,49 @@ copyDir(path.join(tmpDir, 'node_modules'), extraNodeModules);
 
 safeRmSync(tmpDir, '.deps-tmp (cleanup)');
 
+// 5. Copy native module bindings explicitly (ensures .node files are present)
+console.log('\n[5/5] Ensuring native module bindings...');
+const nativeModules = ['better-sqlite3'];
+for (const mod of nativeModules) {
+  const srcModDir = path.join(rootDir, 'node_modules', mod);
+  const dstModDir = path.join(extraNodeModules, mod);
+
+  if (!fs.existsSync(srcModDir)) {
+    console.warn(`  WARNING: Module not found in root: ${mod}`);
+    continue;
+  }
+
+  // Ensure destination exists
+  fs.mkdirSync(dstModDir, { recursive: true });
+
+  // Copy critical directories
+  ['build', 'lib', 'deps'].forEach(dir => {
+    const srcDir = path.join(srcModDir, dir);
+    if (fs.existsSync(srcDir)) {
+      const dstDir = path.join(dstModDir, dir);
+      copyDir(srcDir, dstDir);
+      console.log(`  Copied ${dir} for ${mod}`);
+    }
+  });
+
+  // Copy package.json
+  const srcPackageJson = path.join(srcModDir, 'package.json');
+  if (fs.existsSync(srcPackageJson)) {
+    fs.copyFileSync(srcPackageJson, path.join(dstModDir, 'package.json'));
+    console.log(`  Copied package.json for ${mod}`);
+  }
+}
+
+// Verify native bindings
+console.log('\n  Verifying native bindings...');
+const betterSqlite3NodePath = path.join(extraNodeModules, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+if (fs.existsSync(betterSqlite3NodePath)) {
+  const stats = fs.statSync(betterSqlite3NodePath);
+  console.log(`  better_sqlite3.node: ${(stats.size / 1024).toFixed(1)} KB`);
+} else {
+  console.warn('  WARNING: better_sqlite3.node not found in extra node_modules');
+}
+
 console.log('\n=== Artifacts ready ===');
 
 function safeRmSync(dir, label, maxRetries = 10) {

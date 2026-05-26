@@ -127,7 +127,8 @@ async function onReady(): Promise<void> {
   const nodeModulesDir = resolvePath('backend_node_modules');
   const nodeRuntimePath = resolvePath('node-runtime', 'node.exe');
 
-  const dataDir = getChromeDataDir(); // same userData base, used for output/runs etc.
+  const dataDir = app.getPath('userData'); // User data directory for database and config
+  const dbPath = path.join(dataDir, 'data', 'crawler.db'); // SQLite database path
 
   // Load API keys from user data directory (not bundled .env)
   // Users configure their own API keys via the app settings
@@ -138,6 +139,7 @@ async function onReady(): Promise<void> {
     PORT: String(port),
     CHROME_DATA_DIR: chromeDataDir,
     DATA_DIR: dataDir,
+    DB_PATH: dbPath, // Explicitly set SQLite database path
     FRONTEND_DIR: frontendDistDir,
     NODE_PATH: nodeModulesDir,
     NODE_ENV: 'production',

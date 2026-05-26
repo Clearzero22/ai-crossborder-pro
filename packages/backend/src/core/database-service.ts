@@ -1,6 +1,8 @@
 import { createDatabaseDriver, type IDatabaseDriver } from './drivers';
 import type { DriverConfig } from './drivers/types';
 import { CrawlerRun, ProductRecord } from './types';
+import * as path from 'path';
+import * as os from 'os';
 
 const DEFAULT_PG_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
@@ -10,6 +12,16 @@ const DEFAULT_PG_CONFIG = {
   password: process.env.DB_PASS || 'crawler_pass',
 };
 
+// Get the default SQLite database path
+// Priority: DB_PATH env > DATA_DIR env > home directory
+function getDefaultSqlitePath(): string {
+  if (process.env.DB_PATH) {
+    return path.resolve(process.env.DB_PATH);
+  }
+  const dataDir = process.env.DATA_DIR || path.join(os.homedir(), '.ai-crossborder-pro');
+  return path.join(dataDir, 'data', 'crawler.db');
+}
+
 export class DatabaseService {
   private driver: IDatabaseDriver;
 
@@ -17,7 +29,7 @@ export class DatabaseService {
     const driverType = (process.env.DB_DRIVER || 'sqlite') as 'postgres' | 'sqlite';
     this.driver = createDatabaseDriver(driverType, {
       pgConfig: pgConfig || DEFAULT_PG_CONFIG,
-      sqlitePath: process.env.DB_PATH || 'data/crawler.db',
+      sqlitePath: getDefaultSqlitePath(),
     });
   }
 
